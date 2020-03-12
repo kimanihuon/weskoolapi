@@ -1,41 +1,10 @@
 const express = require('express');
+const jwt = require('jsonwebtoken');
 const router = express.Router();
 const User = require('../models/odm');
 const logger = require("../logger/logger");
-
-function validate(type, req, res, next) {
-
-    // Use variable for object key and value
-    var obj = {};
-    obj[type] = req.body[type]
-
-    // resolves to the Mongoose document if MongoDB found a document with the given id, or null if no document was found.
-    User.findOne(obj).then(function (param) {
-        if (param) {
-            // Resolve password
-            if (req.body.password == param.password) {
-
-                logger.info(`Login successful from I.P: ${req.connection.remoteAddress} User ID: ${param._id}`)
-                res.send({
-                    param
-                })
-            } else {
-                logger.info(`Login failed from I.P: ${req.connection.remoteAddress} Invalid credentials provided`)
-                res.send({
-                    success: false,
-                    message: "Invalid credentials"
-                })
-            }
-
-        } else {
-            logger.info(`Login failed from I.P: ${req.connection.remoteAddress} Invalid User type`)
-            res.send({
-                success: false,
-                message: "Invalid user"
-            })
-        }
-    }).catch(next);
-}
+const keyObject = require("../keys/key");
+const secretkey = keyObject.key;
 
 router.get('/users', function (req, res, next) {
     logger.info(`Get request from I.P: ${req.connection.remoteAddress}`)
@@ -53,7 +22,10 @@ router.post('/register', function (req, res, next) {
     // user.save();
     // ... similar to:
     User.create(req.body).then(function (user) {  // Javascript promise // return saved user
-        res.send(user);
+        // Filtered details for the user. Excluding the password
+        var filteredDetails = { id: user._id, username: user.username, email: user.email }
+        // Generate token for user
+        generateToken( filteredDetails, req, res, user._id );
         logger.info(`Registration successful from I.P: ${req.connection.remoteAddress} User ID: ${user._id}`)
     }).catch(
         next
@@ -82,6 +54,11 @@ router.post('/login', function (req, res, next) {
     }
 });
 
+// Session check
+router.post('/login/verify', setToken, verifyToken, function (req, res, next) {
+    res.send({ authorized: true })
+})
+
 // Update user details
 router.put('/users/:id', function (req, res, next) {
     logger.info(`Put request from I.P: ${req.connection.remoteAddress}`)
@@ -95,5 +72,102 @@ router.put('/users/:id', function (req, res, next) {
         })
     }).catch(next);
 })
+
+// Validate existing user
+function validate(type, req, res, next) {
+
+    // Use variable for object key and value
+    var obj = {};
+    obj[type] = req.body[type]
+
+    // resolves to the Mongoose document if MongoDB found a document with the given id, or null if no document was found.
+    User.findOne(obj).then(function (param) {
+        if (param) {
+            // Resolve password
+            if (req.body.password == param.password) {
+
+                logger.info(`Login successful from I.P: ${req.connection.remoteAddress} User ID: ${param._id}`);
+
+                // Filtered details for the user. Excluding the password
+                var user = { id: param._id, username: param.username, email: param.email }
+
+                // Generate and sign a json web token
+                generateToken(user, req, res, param._id);
+
+            } else {
+                logger.info(`Login failed from I.P: ${req.connection.remoteAddress} Invalid credentials provided`)
+                res.send({
+                    success: false,
+                    message: "Invalid credentials"
+                })
+            }
+
+        } else {
+            logger.info(`Login failed from I.P: ${req.connection.remoteAddress} Invalid User type`)
+            res.send({
+                success: false,
+                message: "Invalid user"
+            })
+        }
+    }).catch(next);
+}
+
+// JWT functions
+function generateToken(user, req, res, id) {
+    // Generate and sign a json web token
+    // Option: { expiresIn: 30s}
+    jwt.sign({ user }, secretkey, (err, token) => {
+
+        if (err) {
+            logger.info(`Error generating token for: ${req.connection.remoteAddress} User ID: ${id}. Error: ${err}`);
+            res.status(422).send({ success: false, message: "Server error" });
+            return;
+        } else {
+            res.json({
+                // Generated access token
+                success: true,
+                user,
+                token
+            })
+            logger.info(`Web token generated for I.P: ${req.connection.remoteAddress} User ID: ${id}`);
+
+        }
+    })
+
+}
+
+function setToken(req, res, next) {
+    // FORMAT OF TOKEN
+    // Authorization: Bearer <access_token>
+
+    // Get auth header value
+    const bearerHeader = req.headers['authorization'];
+    // Check if bearer is undefined
+    if (typeof bearerHeader !== 'undefined') {
+        // Split token into two separated by array
+        const bearer = bearerHeader.split(' ');
+        // Get token from array
+        const bearerToken = bearer[1];
+        // Set the token
+        req.token = bearerToken;
+        // Next middleware
+        next();
+
+    } else {
+        // Forbidden
+        res.status(403).send({ error: "forbidden" })
+    }
+}
+
+function verifyToken(req, res, next) {
+    jwt.verify(req.token, secretkey, (err, auth) => {
+        if (err) {
+            // Forbidden
+            res.status(403).send({ success: true, error: "forbidden" })
+        } else {
+            next()
+        }
+    })
+}
 
 module.exports = router;
