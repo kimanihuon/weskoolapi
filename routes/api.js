@@ -62,7 +62,7 @@ router.post('/login', function (req, res, next) {
 });
 
 // Session check
-router.post('/login/verify', setToken, verifyToken, function (req, res, next) {
+router.post('/login/verify', verifyToken, function (req, res, next) {
     res.send({ authorized: true })
 })
 
@@ -113,7 +113,7 @@ function validate(type, req, res, next) {
             logger.info(`Login failed from I.P: ${req.connection.remoteAddress} Invalid User type`)
             res.send({
                 success: false,
-                message: "Invalid user"
+                message: "Invalid login details"
             })
         }
     }).catch(next);
@@ -131,6 +131,7 @@ function generateToken(user, req, res, id) {
             res.status(422).send({ success: false, message: "Server error" });
             return;
         } else {
+            res.cookie('jwtToken', token, { httpOnly: true })
             res.json({
                 // Generated access token
                 success: true,
@@ -144,35 +145,38 @@ function generateToken(user, req, res, id) {
 
 }
 
-function setToken(req, res, next) {
-    // FORMAT OF TOKEN
-    // Authorization: Bearer <access_token>
+// function setToken(req, res, next) {
+//     // FORMAT OF TOKEN
+//     // Authorization: Bearer <access_token>
 
-    // Get auth header value
-    const bearerHeader = req.headers['authorization'];
-    // Check if bearer is undefined
-    if (typeof bearerHeader !== 'undefined') {
-        // Split token into two separated by array
-        const bearer = bearerHeader.split(' ');
-        // Get token from array
-        const bearerToken = bearer[1];
-        // Set the token
-        req.token = bearerToken;
-        // Next middleware
-        next();
+//     // Get auth header value
+//     const bearerHeader = req.headers['authorization'];
+//     // Check if bearer is undefined
+//     if (typeof bearerHeader !== 'undefined') {
+//         // Split token into two separated by array
+//         const bearer = bearerHeader.split(' ');
+//         // Get token from array
+//         const bearerToken = bearer[1];
+//         // Set the token
+//         req.token = bearerToken;
+//         // Next middleware
+//         next();
 
-    } else {
-        // Forbidden
-        res.status(403).send({ error: "forbidden" })
-    }
-}
+//     } else {
+//         // Forbidden
+//         res.status(403).send({ error: "forbidden" })
+//     }
+// }
 
 function verifyToken(req, res, next) {
-    jwt.verify(req.token, secretkey, (err, auth) => {
+
+    jwt.verify(req.cookies.jwtToken, secretkey, (err, auth) => {
         if (err) {
+            logger.info(`Token check and verification from I.P: ${req.connection.remoteAddress} FAILED`)
             // Forbidden
             res.status(403).send({ success: true, error: "forbidden" })
         } else {
+            logger.info(`Token VERIFIED from I.P: ${req.connection.remoteAddress}`)
             next()
         }
     })
