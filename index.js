@@ -1,14 +1,46 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
+const http = require('http');
 const https = require("https");
-const http = require("http");
+
+// For csrf protection
+var cors = require('cors');
+var csrf = require('csurf');
+
+const cookieParser = require('cookie-parser');
+const fs = require('fs');
+
+var routes = require('./routes/api');
+const logger = require("./logger/logger.js");
+
+// Implement environment variables
+var port = 5443;
+var env = 'Development';
+
 var app = express();
 
-const routes = require('./routes/api');
-const logger = require("./logger/logger.js");
-var port = 5443
-var env = 'Development';
+// For Cross Origin Request Sharing Authorization
+// TODO: REMEMBER TO USE VARIABLE FOR ORIGIN
+const corsOptions = {
+    origin: 'http://localhost:8080',
+    credentials: true,
+}
+
+// Activate cors
+app.use(cors(corsOptions));
+
+// setup route middlewares
+var csrfProtection = csrf({ cookie: true });
+
+// parse cookies
+// we need this because "cookie" is true in csrfProtection
+app.use(cookieParser());
+app.use(csrfProtection);
+
+// Body parser Middleware: Code that runs in between the request and the response
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 
 // connect to mongodb
 mongoose.connect('mongodb://localhost:27017/weskool', {
@@ -21,10 +53,6 @@ mongoose.connect('mongodb://localhost:27017/weskool', {
 // res.end() to end the response
 // res.send() to send a response
 
-// Body parser Middleware: Code that runs in between the request and the response
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json());
-
 // Initialize routes
 app.use('/api', routes);
 
@@ -33,7 +61,7 @@ app.use('/api', routes);
 app.use(function (err, req, res, next) {
     // console.log(err)
     logger.info(`Error on request from: ${req.connection.remoteAddress} message: ${err.message}`);
-    
+
     // If duplicate entry error
     if (err.keyValue) {
         // User variable as key for unknown value:
@@ -54,6 +82,19 @@ if (env === 'Development') {
     httpsServer = http.createServer(app);
     httpsServer.listen(port, () => logger.info("running server on from port:::::::" + port))
 } else if (env === 'Production') {
+    // TLS Certificates for https
+    var tls = {
+        Production: {
+            privateKey() {
+                return fs.readFileSync('/etc/letsencrypt/live/', 'utf8')
+            },
+            certificate() {
+                return fs.readFileSync('/etc/letsencrypt/live/', 'utf8')
+            },
+        }
+    }
+
+    var tlsCredentials = { key: tls.Production.privateKey(), cert: tls.Production.certificate() }
     httpsServer = https.createServer(tlsCredentials, app);
     httpsServer.listen(port, () => logger.info("running server on from port:::::::" + port));
 }

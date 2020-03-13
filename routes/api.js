@@ -6,13 +6,20 @@ const logger = require("../logger/logger");
 const keyObject = require("../keys/key");
 const secretkey = keyObject.key;
 
-router.get('/users', function (req, res, next) {
-    logger.info(`Get request from I.P: ${req.connection.remoteAddress}`)
-    res.send({
+// Get CSRF Token
+router.get('/access', function (req, res, next) {
+    var csrfToken = req.csrfToken()
+    logger.info(`Get request from I.P: ${req.connection.remoteAddress} CSRF Token: ${csrfToken}`)
+    // Pass the Csrf Token
+    // res.cookie('XSRF-TOKEN', req.csrfToken());
+    res.cookie('XSRF-TOKEN', csrfToken);     
+    res.locals._csrf = csrfToken;
+    res.json({
         success: true,
         message: "Server is live"
     })
-})
+
+});
 
 // Add users to db
 router.post('/register', function (req, res, next) {
@@ -25,7 +32,7 @@ router.post('/register', function (req, res, next) {
         // Filtered details for the user. Excluding the password
         var filteredDetails = { id: user._id, username: user.username, email: user.email }
         // Generate token for user
-        generateToken( filteredDetails, req, res, user._id );
+        generateToken(filteredDetails, req, res, user._id);
         logger.info(`Registration successful from I.P: ${req.connection.remoteAddress} User ID: ${user._id}`)
     }).catch(
         next
@@ -116,6 +123,7 @@ function validate(type, req, res, next) {
 function generateToken(user, req, res, id) {
     // Generate and sign a json web token
     // Option: { expiresIn: 30s}
+
     jwt.sign({ user }, secretkey, (err, token) => {
 
         if (err) {
