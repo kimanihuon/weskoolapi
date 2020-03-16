@@ -174,7 +174,7 @@ function verifyToken(req, res, next) {
         if (err) {
             logger.info(`Token check and verification from I.P: ${req.connection.remoteAddress} FAILED`)
             // Forbidden
-            res.status(403).send({ success: true, error: "forbidden" })
+            res.status(200).send({ success: true, error: "forbidden" })
         } else {
             logger.info(`Token VERIFIED from I.P: ${req.connection.remoteAddress}`)
             next()
