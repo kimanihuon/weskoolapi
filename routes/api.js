@@ -3,19 +3,22 @@ const jwt = require('jsonwebtoken');
 const router = express.Router();
 const User = require('../models/userOdm');
 const Chat = require('../models/chatOdm');
-const Mongoose = require('mongoose');
 const logger = require("../logger/logger");
 const keyObject = require("../keys/key");
 const secretkey = keyObject.key;
+
+// EXCLUDING A VALUE FROM THE QUERY
+// User.findById("5e789884e8ce6c7ca9043bab", function (err, user) {
+//     console.log(user)
+// }).select('-password')
 
 // Get CSRF Token
 router.get('/access', function (req, res, next) {
     var csrfToken = req.csrfToken()
     logger.info(`Get request from I.P: ${req.connection.remoteAddress} CSRF Token: ${csrfToken}`)
-    // Pass the Csrf Token
-    // res.cookie('XSRF-TOKEN', req.csrfToken());
+    // Pass the Csrf Token;
     res.cookie('XSRF-TOKEN', csrfToken);
-    res.locals._csrf = csrfToken;
+    // res.locals._csrf = csrfToken;
     res.json({
         success: true,
         message: "Server is live"
@@ -31,10 +34,12 @@ router.post('/register', function (req, res, next) {
     // user.save();
     // ... similar to:
     User.create(req.body).then(function (user) {  // Javascript promise // return saved user
+
         // Filtered details for the user. Excluding the password
-        var filteredDetails = { id: user._id, username: user.username, email: user.email }
+        user.password = true
+
         // Generate token for user
-        generateToken(filteredDetails, req, res, user._id);
+        generateToken(user, req, res, user._id);
         logger.info(`Registration successful from I.P: ${req.connection.remoteAddress} User ID: ${user._id}`)
     }).catch(
         next
@@ -66,66 +71,112 @@ router.post('/login', function (req, res, next) {
 
 // Session check
 router.post('/login/verify', verifyToken, function (req, res, next) {
-    res.send({ authorized: true })
+
+    // With callback function
+    User.findById(req.verifiedUser.user._id, function (err, user) {
+        if (err) {
+            logger.info(`Error getting user details from I.P. ${req.connection.remoteAddress}, message: ${err} `);
+            res.send({ authorized: false, message: "Unable to get user. Probably not registered" })
+        } else {
+            logger.info(`Success verified user from database from I.P. from I.P. ${req.connection.remoteAddress}`)
+            res.send({ authorized: true, details: user })
+        }
+    }).select('-password')
 });
+
+// Logout
+router.post('/logout', verifyToken, function (req, res, next) {
+
+    try {
+        res.clearCookie("jwtToken");
+        res.send({ success: true });
+
+        logger.info(`Logout success from I.P ${req.connection.remoteAddress} user I.D. : ${req.verifiedUser.user._id}`)
+
+    } catch (error) {
+        console.log(error)
+        res.send({ success: false, message: "Logout error try clearing cookies" })
+    }
+
+})
+
+// Search bar
+router.post('/search', verifyToken, function (req, res, next) {
+
+})
 
 // Post new message
 router.post('/send', verifyToken, function (req, res, next) {
 
     try {
-        req.body.single.participants = [{ id: req.verifiedUser.user.id }, { id: req.body.single.messages[0].receipient }]
+        req.body.single.participants = [{ id: req.verifiedUser.user._id }, { id: req.body.single.messages[0].receipient }]
     } catch (error) {
         res.send({ error: "Invalid parameters" });
         console.log(error);
         return
     }
 
-    Chat.create(req.body).then(function (chat) {
+    Chat.findOneAndUpdate(
+        { single: { $elemMatch: { participants: { "$in": [req.body.single.participants] } } } },
+        { $push: { messages: req.body.message } },
+        function (err, doc) {
+            if (err) {
+                console.log(err);
+                res.send({ success: false, message: err })
 
-        // Link sender to chat
-        if (verifyUser(req, 0) === false) {
-            logger.info(`Unable to verify sender from I.P ${req.connection.remoteAddress} User I.D equal to ${ req.body.single.participants[0].id }`)
-            res.send("Sender not found")
-            return
-        } else {logger.info(`Sender verified successfully from I.P ${req.connection.remoteAddress} User I.D equal to ${ req.body.single.participants[0].id }`)
-            
-            // Link receiver to chat
-            if (verifyUser(req, 1) === false) {
-                logger.info(`Unable to verify receiver from I.P ${req.connection.remoteAddress} User I.D equal to ${ req.body.single.participants[1].id }`)
-                res.send("Receipient not found")
-                return
             } else {
-                logger.info(`Receiver verified successfully from I.P ${req.connection.remoteAddress} User I.D equal to ${ req.body.single.participants[1].id }`)
-
-                // * Associating chat to user
-
-                if (associateUser(req, res, 0, chat) === false) {
-                    logger.info(`Unable to associate sender to chat from I.P ${req.connection.remoteAddress} User I.D equal to ${ req.body.single.participants[0].id }`)
-                    res.send({ error: 'Sender association failed, is the user registered' })
-                    return
-                } else {
-                    logger.info(`Sender field updated successfully from I.P ${req.connection.remoteAddress} User I.D equal to ${ req.body.single.participants[0].id }`)
-                    if (associateUser(req, res, 1, chat) === false) {
-                        logger.info(`Unable to associate receiver to chat from I.P ${req.connection.remoteAddress} User I.D equal to ${ req.body.single.participants[1].id }`)
-                        res.send({ error: 'Receiver association failed, is the user registered' })
-                    } else {
-                        logger.info(`Receiver field updated successfully from I.P ${req.connection.remoteAddress} User I.D equal to ${ req.body.single.participants[1].id }`)
-                        res.send({ success: true, message: 'Message sent successfully', chat: chat._id })
-                    }
-                }
+                // console.log(doc)
+                res.send({ success: true, message: doc })
             }
-        }
+        })
+
+    // Chat.create(req.body).then(function (chat) {
+
+    //     // Link sender to chat
+    //     if (verifyUser(req, 0) === false) {
+    //         logger.info(`Unable to verify sender from I.P ${req.connection.remoteAddress} User I.D equal to ${req.body.single.participants[0].id}`)
+    //         res.send("Sender not found")
+    //         return
+    //     } else {
+    //         logger.info(`Sender verified successfully from I.P ${req.connection.remoteAddress} User I.D equal to ${req.body.single.participants[0].id}`)
+
+    //         // Link receiver to chat
+    //         if (verifyUser(req, 1) === false) {
+    //             logger.info(`Unable to verify receiver from I.P ${req.connection.remoteAddress} User I.D equal to ${req.body.single.participants[1].id}`)
+    //             res.send("Receipient not found")
+    //             return
+    //         } else {
+    //             logger.info(`Receiver verified successfully from I.P ${req.connection.remoteAddress} User I.D equal to ${req.body.single.participants[1].id}`)
+
+    //             // * Associating chat to user
+
+    //             if (associateUser(req, res, 0, chat) === false) {
+    //                 logger.info(`Unable to associate sender to chat from I.P ${req.connection.remoteAddress} User I.D equal to ${req.body.single.participants[0].id}`)
+    //                 res.send({ error: 'Sender association failed, is the user registered' })
+    //                 return
+    //             } else {
+    //                 logger.info(`Sender field updated successfully from I.P ${req.connection.remoteAddress} User I.D equal to ${req.body.single.participants[0].id}`)
+    //                 if (associateUser(req, res, 1, chat) === false) {
+    //                     logger.info(`Unable to associate receiver to chat from I.P ${req.connection.remoteAddress} User I.D equal to ${req.body.single.participants[1].id}`)
+    //                     res.send({ error: 'Receiver association failed, is the user registered' })
+    //                 } else {
+    //                     logger.info(`Receiver field updated successfully from I.P ${req.connection.remoteAddress} User I.D equal to ${req.body.single.participants[1].id}`)
+    //                     res.send({ success: true, message: 'Message sent successfully', chat: chat._id })
+    //                 }
+    //             }
+    //         }
+    //     }
 
 
 
-    }).catch(next)
-    logger.info(`Send message post request from I.P: ${req.connection.remoteAddress}`);
+    // }).catch(next)
+    // logger.info(`Send message post request from I.P: ${req.connection.remoteAddress}`);
 
 })
 
 // Post new message to existing chat
 router.post('/existing', verifyToken, function (req, res, next) {
-    
+
 })
 
 // Update user details
@@ -138,7 +189,7 @@ router.put('/users/:id', function (req, res, next) {
         User.findOne({ _id: req.params.id }, req.body).then(function (user) {
             res.send(user);
             console.log('successfully updated user with id: ' + user._id)
-        })
+        }).select('-password')
     }).catch(next);
 })
 
@@ -150,18 +201,18 @@ function validate(type, req, res, next) {
     obj[type] = req.body[type]
 
     // resolves to the Mongoose document if MongoDB found a document with the given id, or null if no document was found.
-    User.findOne(obj).then(function (param) {
-        if (param) {
+    User.findOne(obj).then(function (user) {
+        if (user) {
             // Resolve password
-            if (req.body.password == param.password) {
+            if (req.body.password == user.password) {
 
-                logger.info(`Login successful from I.P: ${req.connection.remoteAddress} User ID: ${param._id}`);
+                logger.info(`Login successful from I.P: ${req.connection.remoteAddress} User ID: ${user._id}`);
 
                 // Filtered details for the user. Excluding the password
-                var user = { id: param._id, username: param.username, email: param.email }
+                user.password = true
 
                 // Generate and sign a json web token
-                generateToken(user, req, res, param._id);
+                generateToken(user, req, res, user._id);
 
             } else {
                 logger.info(`Login failed from I.P: ${req.connection.remoteAddress} Invalid credentials provided`)
