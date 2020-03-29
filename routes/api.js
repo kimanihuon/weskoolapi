@@ -100,11 +100,6 @@ router.post('/logout', verifyToken, function (req, res, next) {
 
 })
 
-// Search bar
-router.post('/search', verifyToken, function (req, res, next) {
-
-})
-
 // Post new message
 router.post('/send', verifyToken, function (req, res, next) {
 

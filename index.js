@@ -3,6 +3,8 @@ const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const http = require('http');
 const https = require("https");
+const socket = require('socket.io');
+const User = require('./models/userOdm');
 
 // For csrf protection
 var cors = require('cors');
@@ -78,9 +80,12 @@ app.use(function (err, req, res, next) {
     }
 });
 
+var server;
+
 if (env === 'Development') {
     httpsServer = http.createServer(app);
-    httpsServer.listen(port, () => logger.info("running server on from port:::::::" + port))
+    server = httpsServer.listen(port, () => logger.info("running server on from port:::::::" + port));
+
 } else if (env === 'Production') {
     // TLS Certificates for https
     var tls = {
@@ -96,5 +101,38 @@ if (env === 'Development') {
 
     var tlsCredentials = { key: tls.Production.privateKey(), cert: tls.Production.certificate() }
     httpsServer = https.createServer(tlsCredentials, app);
-    httpsServer.listen(port, () => logger.info("running server on from port:::::::" + port));
+    server = httpsServer.listen(port, () => logger.info("running server on from port:::::::" + port));
 }
+
+function search(data, client) {
+    var reg = new RegExp( `\^${data.input}`, "i" );
+
+    User.find({ username: { $regex: reg } }, ['username', '_id', 'avatar'], function (err, user) {
+        if (err) {
+            console.log(err);
+            client.emit('response', user)
+        } else {
+            console.log(user)
+            client.emit('response', user)
+        }
+    }).limit(10)
+}
+
+// WEBSOCKET FOR SEARCH
+// Socket setup 
+var io = socket(server);
+
+io.on('connection', function (client) {
+
+    logger.info(`Made socket connection, I.D: ${client.id}`)
+
+    client.on('input', function (data) {
+        search(data, client)
+    });
+
+    client.on('disconnect', function (data) {
+        console.log(data)
+        logger.info(`Socket I.D: ${client.id} disconnected`)
+    })
+
+})

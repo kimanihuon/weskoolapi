@@ -29,6 +29,16 @@ const userSchema = new Schema({
         unique: true
     },
 
+    name: {
+        type: String,
+        default: 'cool user'
+    },
+
+    online: {
+        type: Boolean,
+        default: false
+    },
+
     email: {
         type: String,
         required: [true, 'Email field is required'],
