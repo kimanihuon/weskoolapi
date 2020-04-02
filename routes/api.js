@@ -3,7 +3,8 @@ const jwt = require('jsonwebtoken');
 const router = express.Router();
 const User = require('../models/userOdm');
 const Chat = require('../models/chatOdm');
-const logger = require("../logger/logger");
+const logger = require("../modules/logger");
+const jwtOperations = require("../modules/jwt");
 const keyObject = require("../keys/key");
 const secretkey = keyObject.key;
 
@@ -11,6 +12,7 @@ const secretkey = keyObject.key;
 // User.findById("5e789884e8ce6c7ca9043bab", function (err, user) {
 //     console.log(user)
 // }).select('-password')
+
 
 // Get CSRF Token
 router.get('/access', function (req, res, next) {
@@ -39,7 +41,7 @@ router.post('/register', function (req, res, next) {
         user.password = true
 
         // Generate token for user
-        generateToken(user, req, res, user._id);
+        jwtOperations.generateToken(user, req, res, user._id);
         logger.info(`Registration successful from I.P: ${req.connection.remoteAddress} User ID: ${user._id}`)
     }).catch(
         next
@@ -70,7 +72,7 @@ router.post('/login', function (req, res, next) {
 });
 
 // Session check
-router.post('/login/verify', verifyToken, function (req, res, next) {
+router.post('/login/verify', jwtOperations.verifyToken, function (req, res, next) {
 
     // With callback function
     User.findById(req.verifiedUser.user._id, function (err, user) {
@@ -78,14 +80,13 @@ router.post('/login/verify', verifyToken, function (req, res, next) {
             logger.info(`Error getting user details from I.P. ${req.connection.remoteAddress}, message: ${err} `);
             res.send({ authorized: false, message: "Unable to get user. Probably not registered" })
         } else {
-            logger.info(`Success verified user from database from I.P. from I.P. ${req.connection.remoteAddress}`)
-            res.send({ authorized: true, details: user })
+            getReferences(user, req, res, 'verify')
         }
     }).select('-password')
 });
 
 // Logout
-router.post('/logout', verifyToken, function (req, res, next) {
+router.post('/logout', jwtOperations.verifyToken, function (req, res, next) {
 
     try {
         res.clearCookie("jwtToken");
@@ -101,29 +102,7 @@ router.post('/logout', verifyToken, function (req, res, next) {
 })
 
 // Post new message
-router.post('/send', verifyToken, function (req, res, next) {
-
-    try {
-        req.body.single.participants = [{ id: req.verifiedUser.user._id }, { id: req.body.single.messages[0].receipient }]
-    } catch (error) {
-        res.send({ error: "Invalid parameters" });
-        console.log(error);
-        return
-    }
-
-    Chat.findOneAndUpdate(
-        { single: { $elemMatch: { participants: { "$in": [req.body.single.participants] } } } },
-        { $push: { messages: req.body.message } },
-        function (err, doc) {
-            if (err) {
-                console.log(err);
-                res.send({ success: false, message: err })
-
-            } else {
-                // console.log(doc)
-                res.send({ success: true, message: doc })
-            }
-        })
+router.post('/send', jwtOperations.verifyToken, function (req, res, next) {
 
     // Chat.create(req.body).then(function (chat) {
 
@@ -170,7 +149,7 @@ router.post('/send', verifyToken, function (req, res, next) {
 })
 
 // Post new message to existing chat
-router.post('/existing', verifyToken, function (req, res, next) {
+router.post('/existing', jwtOperations.verifyToken, function (req, res, next) {
 
 })
 
@@ -206,8 +185,8 @@ function validate(type, req, res, next) {
                 // Filtered details for the user. Excluding the password
                 user.password = true
 
-                // Generate and sign a json web token
-                generateToken(user, req, res, user._id);
+                // Get chats then generate token
+                getReferences(user, req, res, 'login');
 
             } else {
                 logger.info(`Login failed from I.P: ${req.connection.remoteAddress} Invalid credentials provided`)
@@ -225,70 +204,6 @@ function validate(type, req, res, next) {
             })
         }
     }).catch(next);
-}
-
-// JWT functions
-function generateToken(user, req, res, id) {
-    // Generate and sign a json web token
-    // Option: { expiresIn: 30s}
-
-    jwt.sign({ user }, secretkey, (err, token) => {
-
-        if (err) {
-            logger.info(`Error generating token for: ${req.connection.remoteAddress} User ID: ${id}. Error: ${err}`);
-            res.status(422).send({ success: false, message: "Server error" });
-            return;
-        } else {
-            res.cookie('jwtToken', token, { httpOnly: true })
-            res.json({
-                // Generated access token
-                success: true,
-                user,
-                token
-            })
-            logger.info(`Web token generated for I.P: ${req.connection.remoteAddress} User ID: ${id}`);
-
-        }
-    })
-
-}
-
-// function setToken(req, res, next) {
-//     // FORMAT OF TOKEN
-//     // Authorization: Bearer <access_token>
-
-//     // Get auth header value
-//     const bearerHeader = req.headers['authorization'];
-//     // Check if bearer is undefined
-//     if (typeof bearerHeader !== 'undefined') {
-//         // Split token into two separated by array
-//         const bearer = bearerHeader.split(' ');
-//         // Get token from array
-//         const bearerToken = bearer[1];
-//         // Set the token
-//         req.token = bearerToken;
-//         // Next middleware
-//         next();
-
-//     } else {
-//         // Forbidden
-//         res.status(403).send({ error: "forbidden" })
-//     }
-// }
-
-function verifyToken(req, res, next) {
-
-    jwt.verify(req.cookies.jwtToken, secretkey, (err, auth) => {
-        if (err) {
-            logger.info(`Token check and verification from I.P: ${req.connection.remoteAddress} FAILED`)
-            // Forbidden
-            res.status(200).send({ success: true, error: "forbidden" })
-        } else {
-            req.verifiedUser = auth;
-            logger.info(`Token VERIFIED from I.P: ${req.connection.remoteAddress}`)
-            next()
-        }
-    })
 }
 
 // Check whether user exists
@@ -310,27 +225,30 @@ function verifyUser(req, index) {
     return result;
 }
 
-// Associate user to chat
-function associateUser(req, res, index, chat) {
+// Get associated chats
+function getReferences(user, req, res, type) {
+    User.findOne({ "username": user.username }, { "chats": 1, "friends": 1 }).then((result) => {
+        // GET ALL CHATS
+        Chat.find({ "_id": { "$in": result["chats"] } }).then((chats) => {
+            // Assign results to chat
+            user.chats = chats;
 
-    var result;
+            // GET ALL FRIENDS
+            User.find({ "_id": { "$in": result["friends"] } }).then((friends) => {
+                // Assign result to friends
+                user.friends = friends;
 
-    result = User.findOneAndUpdate(
-        { _id: req.body.single.participants[index].id },
-        { $push: { chats: chat._id } },
-        { upsert: true },
-        function name(err, doc) {
-            if (err) {
-                console.log(err);
-                return false;
-            } else {
-                // console.log(doc)
-                return true
-            }
-        })
+                if (type === 'verify') {
+                    logger.info(`Success verified user from database from I.P. from I.P. ${req.connection.remoteAddress}`)
+                    res.send({ authorized: true, details: user })
+                } else if (type === 'login') {
+                    // Generate and sign a json web token
+                    jwtOperations.generateToken(user, req, res, user._id);
+                }
 
-
-    return result;
+            });
+        });
+    })
 }
 
 module.exports = router;

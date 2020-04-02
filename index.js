@@ -4,7 +4,8 @@ const mongoose = require('mongoose');
 const http = require('http');
 const https = require("https");
 const socket = require('socket.io');
-const User = require('./models/userOdm');
+const socketOperations = require('./modules/sockets');
+const jwtOperations = require('./modules/jwt');
 
 // For csrf protection
 var cors = require('cors');
@@ -14,7 +15,7 @@ const cookieParser = require('cookie-parser');
 const fs = require('fs');
 
 var routes = require('./routes/api');
-const logger = require("./logger/logger.js");
+const logger = require("./modules/logger.js");
 
 // Implement environment variables
 var port = 5443;
@@ -104,35 +105,55 @@ if (env === 'Development') {
     server = httpsServer.listen(port, () => logger.info("running server on from port:::::::" + port));
 }
 
-function search(data, client) {
-    var reg = new RegExp( `\^${data.input}`, "i" );
-
-    User.find({ username: { $regex: reg } }, ['username', '_id', 'avatar'], function (err, user) {
-        if (err) {
-            console.log(err);
-            client.emit('response', user)
-        } else {
-            console.log(user)
-            client.emit('response', user)
-        }
-    }).limit(10)
-}
-
 // WEBSOCKET FOR SEARCH
 // Socket setup 
 var io = socket(server);
 
 io.on('connection', function (client) {
 
-    logger.info(`Made socket connection, I.D: ${client.id}`)
+    var address = client.handshake.address;
 
+    // Request headers
+    // console.log(client.handshake.headers)
+
+    logger.info(`Made socket connection, I.D: ${client.id} from I.P: ${address}`)
+
+    // Global user search functionality
     client.on('input', function (data) {
-        search(data, client)
+        if (jwtOperations.verifySocketToken(client)) {
+            socketOperations.search(data, client)
+        }
     });
+
+    // Send message
+    client.on('send', function (data) {
+        console.log(data)
+        if (jwtOperations.verifySocketToken(client)) {
+            socketOperations.send(data, client)
+        }
+    })
 
     client.on('disconnect', function (data) {
         console.log(data)
-        logger.info(`Socket I.D: ${client.id} disconnected`)
+        logger.info(`Socket I.D: ${client.id} disconnected from I.P: ${address}`)
     })
 
 })
+
+// // To update, the field must first be defined in the schema
+// User.updateMany({}, { avatar: 'https://cdn.vuetifyjs.com/images/lists/2.jpg' }, function (err, result) {
+//     if (err) {
+//         console.log(err)
+//     } else {
+//         console.log(result)
+//     }
+// })
+
+//Where User is you mongoose user model
+// User.updateOne({ username: "Kimani" }, { avatar: "test" }, function (err, result) {
+//     if (err) {
+//         console.log(err)
+//     } else {
+//         console.log(result)
+//     }
+// })

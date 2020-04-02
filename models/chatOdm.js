@@ -18,19 +18,33 @@ const messageContents = new Schema({
 
 // User
 const user = new Schema({
-    user: {
+    id: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'users'
+    },
+    username: {
+        type: String
+    },
+    avatar: {
+        type: String
     }
 });
 
 // Subdocument schema for message
 const messageStructure = new Schema({
+
+    to: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'users',
+        default: null
+    },
+
     from: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'users',
         default: null
     },
+
     contents: messageContents
 })
 
@@ -41,13 +55,6 @@ const chat = new Schema({
     messages: [messageStructure]
 })
 
-// *TODO: Include the chat schema
-
-// Schema for the chats database
-const allChats = new Schema({
-    single: [],
-});
-
-const Chat = mongoose.model('chat', allChats);
+const Chat = mongoose.model('chat', chat);
 
 module.exports = Chat

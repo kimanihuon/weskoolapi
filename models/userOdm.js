@@ -50,6 +50,11 @@ const userSchema = new Schema({
         required: [true, 'Password field is required']
     },
 
+    seen: {
+        type: Date,
+        default: Date.now
+    },
+
     avatar: {
         type: String,
     },
@@ -59,9 +64,15 @@ const userSchema = new Schema({
         default: Date.now
     },
 
-    chats: [chatUserReference],
+    chats: {
+        type: Array,
+        default: []
+    },
 
-    friends: [friend]
+    friends: {
+        type: Array,
+        default: []
+    }
 
 });
 
