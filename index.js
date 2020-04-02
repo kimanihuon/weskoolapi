@@ -127,7 +127,7 @@ io.on('connection', function (client) {
 
     // Send message
     client.on('send', function (data) {
-        console.log(data)
+        // console.log(data)
         if (jwtOperations.verifySocketToken(client)) {
             socketOperations.send(data, client)
         }

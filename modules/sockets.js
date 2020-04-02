@@ -41,24 +41,43 @@ SocketOperations.prototype.search = function (data, client) {
 }
 
 SocketOperations.prototype.send = function (data, client) {
-    
+
+    // I.P address
     var address = client.handshake.address;
 
     if ((typeof data._id) !== 'undefined') {
-        logger.info("here")
+
+        Chat.findByIdAndUpdate(data._id, { $push: { 'messages': data.messageStructure } }, { new: true }, (err, res) => {
+            if (err) {
+                logger.info(`An error occured adding message to existing chat: ${data._id} from socket: ${client.id} and I.P address: ${address}. Message: ${err.message}`);
+                client.emit('sentResponse', { success: false })
+            } else {
+                var message = res.messages[res.messages.length - 1];
+                logger.info(`Successfully added chat to: ${data._id} from socket: ${client.id} and I.P address: ${address}.`)
+                client.emit('sentResponse', { success: true, type: 'existing', data: message })
+            }
+        })
 
     } else {
 
+        // Copy of message structure
+        let struct = JSON.parse(JSON.stringify(data.messageStructure));
+
+        // Clear active chat contents for use in the front end
+        data.messageStructure.contents.text = '';
+        data.messageStructure.contents.images = [];
+        data.messageStructure.contents.timestamp = '';
+
         // Insert message structure to messages
-        data.messages.push(data.messageStructure);
+        data.messages.push(struct);
 
         Chat.create(data).then(function (chat) {
 
             resultArray = [];
-            
+
             // Number of participants
             for (let index = 0; index < 2; index++) {
-                if (associateUser(data, index, chat)){
+                if (associateUser(data, index, chat)) {
                     resultArray[index] = true;
                 } else {
                     resultArray[index] = false;
@@ -68,7 +87,7 @@ SocketOperations.prototype.send = function (data, client) {
             logger.info(`Success creating chat, socket: ${client.id} from I.P: ${address}, user addition results: ${resultArray}`)
 
             if (associateUser) {
-                client.emit('sentResponse', { success: true, data: chat })   
+                client.emit('sentResponse', { success: true, type: 'new', data: chat })
             }
         })
     }
