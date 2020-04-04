@@ -93,5 +93,19 @@ SocketOperations.prototype.send = function (data, client) {
     }
 }
 
+SocketOperations.prototype.listen = async function (data, client) {
+    Chat.watch().on('change', (data) => {
+        console.log(data)
+    })
+}
+
+async function watcher() {
+    Chat.watch().on('change', (data) => {
+        console.log(data)
+    })
+}
+
+watcher()
+
 module.exports = new SocketOperations
 

@@ -45,13 +45,25 @@ app.use(csrfProtection);
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
-// connect to mongodb
-mongoose.connect('mongodb://localhost:27017/weskool', {
+// var uri = 'mongodb://localhost:27017/?replicaSet=rs0'; // If it was only one instance (Single node replica set)
+
+// Define replica db parameters
+// var uri = 'mongodb://user:pw@host1.com:27017,host2.com:27017,host3.com:27017/testdb'
+var uri = 'mongodb://localhost:27017,localhost:27018,localhost:27019/weskool?replicaSet=rs0'
+
+// Options
+var options = {
     useNewUrlParser: true,
     useUnifiedTopology: true,
     useFindAndModify: false,
     useCreateIndex: true
+}
+
+// connect to mongodb
+mongoose.connect(uri, options, function(err){
+    logger.info(`Connection error: ${err}`)
 });
+
 // mongoose.Promise = global.Promise
 // res.end() to end the response
 // res.send() to send a response
@@ -131,6 +143,11 @@ io.on('connection', function (client) {
         if (jwtOperations.verifySocketToken(client)) {
             socketOperations.send(data, client)
         }
+    });
+
+
+    client.on('listen', function (data) {
+
     })
 
     client.on('disconnect', function (data) {

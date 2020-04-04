@@ -41,7 +41,7 @@ router.post('/register', function (req, res, next) {
         user.password = true
 
         // Generate token for user
-        jwtOperations.generateToken(user, req, res, user._id);
+        jwtOperations.generateToken(user, req, res, next, user._id);
         logger.info(`Registration successful from I.P: ${req.connection.remoteAddress} User ID: ${user._id}`)
     }).catch(
         next
@@ -75,12 +75,12 @@ router.post('/login', function (req, res, next) {
 router.post('/login/verify', jwtOperations.verifyToken, function (req, res, next) {
 
     // With callback function
-    User.findById(req.verifiedUser.user._id, function (err, user) {
+    User.findById(req.verifiedUser._id, function (err, user) {
         if (err) {
             logger.info(`Error getting user details from I.P. ${req.connection.remoteAddress}, message: ${err} `);
             res.send({ authorized: false, message: "Unable to get user. Probably not registered" })
         } else {
-            getReferences(user, req, res, 'verify')
+            getReferences(user, req, res, next, 'verify')
         }
     }).select('-password')
 });
@@ -186,7 +186,7 @@ function validate(type, req, res, next) {
                 user.password = true
 
                 // Get chats then generate token
-                getReferences(user, req, res, 'login');
+                getReferences(user, req, res, next, 'login');
 
             } else {
                 logger.info(`Login failed from I.P: ${req.connection.remoteAddress} Invalid credentials provided`)
@@ -226,7 +226,7 @@ function verifyUser(req, index) {
 }
 
 // Get associated chats
-function getReferences(user, req, res, type) {
+function getReferences(user, req, res, next, type) {
     User.findOne({ "username": user.username }, { "chats": 1, "friends": 1 }).then((result) => {
         // GET ALL CHATS
         Chat.find({ "_id": { "$in": result["chats"] } }).then((chats) => {
@@ -243,9 +243,9 @@ function getReferences(user, req, res, type) {
                     res.send({ authorized: true, details: user })
                 } else if (type === 'login') {
                     // Generate and sign a json web token
-                    jwtOperations.generateToken(user, req, res, user._id);
+                    res.cookie('name', 123, { httpOnly: true })
+                    jwtOperations.generateToken(user, req, res, next, user._id);
                 }
-
             });
         });
     })
