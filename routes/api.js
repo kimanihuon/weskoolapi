@@ -92,7 +92,7 @@ router.post('/logout', jwtOperations.verifyToken, function (req, res, next) {
         res.clearCookie("jwtToken");
         res.send({ success: true });
 
-        logger.info(`Logout success from I.P ${req.connection.remoteAddress} user I.D. : ${req.verifiedUser.user._id}`)
+        logger.info(`Logout success from I.P ${req.connection.remoteAddress} user I.D. : ${req.verifiedUser._id}`)
 
     } catch (error) {
         console.log(error)
@@ -151,7 +151,7 @@ router.post('/send', jwtOperations.verifyToken, function (req, res, next) {
 // Post new message to existing chat
 router.post('/existing', jwtOperations.verifyToken, function (req, res, next) {
 
-})
+});
 
 // Update user details
 router.put('/users/:id', function (req, res, next) {
@@ -165,7 +165,7 @@ router.put('/users/:id', function (req, res, next) {
             console.log('successfully updated user with id: ' + user._id)
         }).select('-password')
     }).catch(next);
-})
+});
 
 // Validate existing user
 function validate(type, req, res, next) {

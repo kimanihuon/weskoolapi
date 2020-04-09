@@ -6,6 +6,7 @@ const https = require("https");
 const socket = require('socket.io');
 const socketOperations = require('./modules/sockets');
 const jwtOperations = require('./modules/jwt');
+const userCache = require('./modules/userCache');
 
 // For csrf protection
 var cors = require('cors');
@@ -61,8 +62,12 @@ var options = {
 
 // connect to mongodb
 mongoose.connect(uri, options, function(err){
-    logger.info(`Connection error: ${err}`)
-});
+    if (err) {
+        logger.info(`Connection error: ${err}`)   
+    } {
+        logger.info(`Successfully connected to mongo db`)
+    }
+}); 
 
 // mongoose.Promise = global.Promise
 // res.end() to end the response
@@ -128,11 +133,14 @@ io.on('connection', function (client) {
     // Request headers
     // console.log(client.handshake.headers)
 
-    logger.info(`Made socket connection, I.D: ${client.id} from I.P: ${address}`)
+    logger.info(`Made socket connection, I.D: ${client.id} from I.P: ${address}`);
+
+    // Cache the user
+    userCache.set(client);
 
     // Global user search functionality
     client.on('input', function (data) {
-        if (jwtOperations.verifySocketToken(client)) {
+        if (jwtOperations.verifySocketToken(client)[0]) {
             socketOperations.search(data, client)
         }
     });
@@ -140,20 +148,19 @@ io.on('connection', function (client) {
     // Send message
     client.on('send', function (data) {
         // console.log(data)
-        if (jwtOperations.verifySocketToken(client)) {
+        if (jwtOperations.verifySocketToken(client)[0]) {
             socketOperations.send(data, client)
         }
     });
 
-
     client.on('listen', function (data) {
-
-    })
+        logger.info(`Client ${client.id} is listening to changes`)
+    });
 
     client.on('disconnect', function (data) {
         console.log(data)
         logger.info(`Socket I.D: ${client.id} disconnected from I.P: ${address}`)
-    })
+    });
 
 })
 

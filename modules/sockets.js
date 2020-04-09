@@ -1,6 +1,7 @@
 const User = require('../models/userOdm');
 const Chat = require('../models/chatOdm');
 const logger = require('../modules/logger');
+const userCache = require('../modules/userCache');
 
 function SocketOperations() { }
 
@@ -23,6 +24,10 @@ function associateUser(data, idx, chat) {
         })
 
     return result;
+}
+
+function alert(params) {
+    
 }
 
 // Search for usernames
@@ -53,7 +58,7 @@ SocketOperations.prototype.send = function (data, client) {
                 client.emit('sentResponse', { success: false })
             } else {
                 var message = res.messages[res.messages.length - 1];
-                logger.info(`Successfully added chat to: ${data._id} from socket: ${client.id} and I.P address: ${address}.`)
+                logger.info(`Successfully added chat to: ${data._id} from socket: ${client.id} and I.P address: ${address}.`);
                 client.emit('sentResponse', { success: true, type: 'existing', data: message })
             }
         })
@@ -64,12 +69,16 @@ SocketOperations.prototype.send = function (data, client) {
         let struct = JSON.parse(JSON.stringify(data.messageStructure));
 
         // Clear active chat contents for use in the front end
+        data.messageStructure.to = null;
+        data.messageStructure.from = null;
         data.messageStructure.contents.text = '';
         data.messageStructure.contents.images = [];
         data.messageStructure.contents.timestamp = '';
 
         // Insert message structure to messages
         data.messages.push(struct);
+
+        console.log(data)
 
         Chat.create(data).then(function (chat) {
 
@@ -92,20 +101,6 @@ SocketOperations.prototype.send = function (data, client) {
         })
     }
 }
-
-SocketOperations.prototype.listen = async function (data, client) {
-    Chat.watch().on('change', (data) => {
-        console.log(data)
-    })
-}
-
-async function watcher() {
-    Chat.watch().on('change', (data) => {
-        console.log(data)
-    })
-}
-
-watcher()
 
 module.exports = new SocketOperations
 

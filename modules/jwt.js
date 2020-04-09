@@ -86,6 +86,7 @@ jwtOperations.prototype.verifySocketToken = function (client) {
     // console.log(cookies);
 
     var success;
+    var verifiedUser;
 
     jwt.verify(cookies.jwtToken, secretkey, (err, auth) => {
         if (err) {
@@ -93,13 +94,13 @@ jwtOperations.prototype.verifySocketToken = function (client) {
             // Forbidden
             success = false;
         } else {
-            // req.verifiedUser = auth;
+            verifiedUser = auth;
             logger.info(`Token from Socket: ${client.id} verified from I.P: ${address}`)
             success = true;
         }
     })
 
-    return success;
+    return [success, verifiedUser];
 }
 
 module.exports = new jwtOperations

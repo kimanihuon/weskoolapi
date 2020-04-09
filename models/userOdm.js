@@ -57,6 +57,7 @@ const userSchema = new Schema({
 
     avatar: {
         type: String,
+        default: 'https://cdn.vuetifyjs.com/images/lists/4.jpg'
     },
 
     created_date: {
