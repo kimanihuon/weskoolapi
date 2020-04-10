@@ -76,8 +76,8 @@ router.post('/login/verify', jwtOperations.verifyToken, function (req, res, next
 
     // With callback function
     User.findById(req.verifiedUser._id, function (err, user) {
-        if (err) {
-            logger.info(`Error getting user details from I.P. ${req.connection.remoteAddress}, message: ${err} `);
+        if (err || !user) {
+            logger.info(`Error getting user details from I.P. ${req.connection.remoteAddress}, message: ${err} or not registered`);
             res.send({ authorized: false, message: "Unable to get user. Probably not registered" })
         } else {
             getReferences(user, req, res, next, 'verify')
@@ -248,6 +248,8 @@ function getReferences(user, req, res, next, type) {
                 }
             });
         });
+    }).catch((err) => {
+        console.log(err)
     })
 }
 

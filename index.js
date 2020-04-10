@@ -148,8 +148,10 @@ io.on('connection', function (client) {
     // Send message
     client.on('send', function (data) {
         // console.log(data)
-        if (jwtOperations.verifySocketToken(client)[0]) {
-            socketOperations.send(data, client)
+        var verify = jwtOperations.verifySocketToken(client);
+        if (verify[0]) {
+            var user = verify[1];
+            socketOperations.send(data, client, user)
         }
     });
 

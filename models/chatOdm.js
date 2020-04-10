@@ -45,6 +45,11 @@ const messageStructure = new Schema({
         default: null
     },
 
+    read: {
+        type: Boolean,
+        default: false
+    },
+
     contents: messageContents
 })
 

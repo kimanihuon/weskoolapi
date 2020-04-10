@@ -26,8 +26,25 @@ function associateUser(data, idx, chat) {
     return result;
 }
 
-function alert(params) {
-    
+function alert(data) {
+
+    var client = userCache.getClient(data.messageStructure.to);
+
+    // Remove participants, no need to resend the participants
+    delete data.participants
+
+    if (client) {
+        if (data._id) {
+            // If it's already existing chat
+            client.emit('newMessage', data);
+        } else {
+            // New chat
+            client.emit('newChat', data);
+        }
+    } else {
+        console.log('client is not online')
+        // TODO: *Because the user is not online schedule a send operation when online
+    }
 }
 
 // Search for usernames
@@ -45,7 +62,9 @@ SocketOperations.prototype.search = function (data, client) {
     }).limit(5)
 }
 
-SocketOperations.prototype.send = function (data, client) {
+SocketOperations.prototype.send = function (data, client, user) {
+
+    // user is authenticated username and _id
 
     // I.P address
     var address = client.handshake.address;
@@ -59,7 +78,8 @@ SocketOperations.prototype.send = function (data, client) {
             } else {
                 var message = res.messages[res.messages.length - 1];
                 logger.info(`Successfully added chat to: ${data._id} from socket: ${client.id} and I.P address: ${address}.`);
-                client.emit('sentResponse', { success: true, type: 'existing', data: message })
+                client.emit('sentResponse', { success: true, type: 'existing', data: message });
+                alert(data);
             }
         })
 
@@ -77,8 +97,6 @@ SocketOperations.prototype.send = function (data, client) {
 
         // Insert message structure to messages
         data.messages.push(struct);
-
-        console.log(data)
 
         Chat.create(data).then(function (chat) {
 

@@ -10,6 +10,9 @@ cache.prototype.set = function (client) {
     var [bool, auth] = jwtOperations.verifySocketToken(client)
     if (bool) {
         this.globalCache[auth.credentials._id] = client 
+        return true;
+    } else {
+        return false;
     }
 }
 
