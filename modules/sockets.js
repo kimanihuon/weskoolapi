@@ -26,20 +26,25 @@ function associateUser(data, idx, chat) {
     return result;
 }
 
+var id;
+
 function alert(data) {
+
+    // console.log(data)
 
     var client = userCache.getClient(data.messageStructure.to);
 
-    // Remove participants, no need to resend the participants
-    delete data.participants
-
     if (client) {
         if (data._id) {
+            // Remove participants, no need to resend the participants
             // If it's already existing chat
             client.emit('newMessage', data);
+            console.log('Emitted new message')
         } else {
             // New chat
+            data._id = id;
             client.emit('newChat', data);
+            console.log('Emitted new chat')
         }
     } else {
         console.log('client is not online')
@@ -89,8 +94,8 @@ SocketOperations.prototype.send = function (data, client, user) {
         let struct = JSON.parse(JSON.stringify(data.messageStructure));
 
         // Clear active chat contents for use in the front end
-        data.messageStructure.to = null;
-        data.messageStructure.from = null;
+        // data.messageStructure.to = null;
+        // data.messageStructure.from = null;
         data.messageStructure.contents.text = '';
         data.messageStructure.contents.images = [];
         data.messageStructure.contents.timestamp = '';
@@ -115,6 +120,8 @@ SocketOperations.prototype.send = function (data, client, user) {
 
             if (associateUser) {
                 client.emit('sentResponse', { success: true, type: 'new', data: chat })
+                id = chat._id;
+                alert(data)
             }
         })
     }

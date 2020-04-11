@@ -160,7 +160,6 @@ io.on('connection', function (client) {
     });
 
     client.on('disconnect', function (data) {
-        console.log(data)
         logger.info(`Socket I.D: ${client.id} disconnected from I.P: ${address}`)
     });
 
