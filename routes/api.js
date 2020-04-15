@@ -101,57 +101,20 @@ router.post('/logout', jwtOperations.verifyToken, function (req, res, next) {
 
 })
 
-// Post new message
-router.post('/send', jwtOperations.verifyToken, function (req, res, next) {
+// Update user details
+router.post('/update', jwtOperations.verifyToken, function (req, res, next) {
+    logger.info(`Details update request from I.P: ${req.connection.remoteAddress} and user I.D ${req.verifiedUser._id} `)
 
-    // Chat.create(req.body).then(function (chat) {
-
-    //     // Link sender to chat
-    //     if (verifyUser(req, 0) === false) {
-    //         logger.info(`Unable to verify sender from I.P ${req.connection.remoteAddress} User I.D equal to ${req.body.single.participants[0].id}`)
-    //         res.send("Sender not found")
-    //         return
-    //     } else {
-    //         logger.info(`Sender verified successfully from I.P ${req.connection.remoteAddress} User I.D equal to ${req.body.single.participants[0].id}`)
-
-    //         // Link receiver to chat
-    //         if (verifyUser(req, 1) === false) {
-    //             logger.info(`Unable to verify receiver from I.P ${req.connection.remoteAddress} User I.D equal to ${req.body.single.participants[1].id}`)
-    //             res.send("Receipient not found")
-    //             return
-    //         } else {
-    //             logger.info(`Receiver verified successfully from I.P ${req.connection.remoteAddress} User I.D equal to ${req.body.single.participants[1].id}`)
-
-    //             // * Associating chat to user
-
-    //             if (associateUser(req, res, 0, chat) === false) {
-    //                 logger.info(`Unable to associate sender to chat from I.P ${req.connection.remoteAddress} User I.D equal to ${req.body.single.participants[0].id}`)
-    //                 res.send({ error: 'Sender association failed, is the user registered' })
-    //                 return
-    //             } else {
-    //                 logger.info(`Sender field updated successfully from I.P ${req.connection.remoteAddress} User I.D equal to ${req.body.single.participants[0].id}`)
-    //                 if (associateUser(req, res, 1, chat) === false) {
-    //                     logger.info(`Unable to associate receiver to chat from I.P ${req.connection.remoteAddress} User I.D equal to ${req.body.single.participants[1].id}`)
-    //                     res.send({ error: 'Receiver association failed, is the user registered' })
-    //                 } else {
-    //                     logger.info(`Receiver field updated successfully from I.P ${req.connection.remoteAddress} User I.D equal to ${req.body.single.participants[1].id}`)
-    //                     res.send({ success: true, message: 'Message sent successfully', chat: chat._id })
-    //                 }
-    //             }
-    //         }
-    //     }
-
-
-
-    // }).catch(next)
-    // logger.info(`Send message post request from I.P: ${req.connection.remoteAddress}`);
-
+    User.updateOne({ _id: req.verifiedUser._id }, req.body.fields, function (err, doc) {
+        if (err) {
+            logger.info(`Failed details update request from I.P: ${req.connection.remoteAddress} and user I.D ${req.verifiedUser._id} `)
+            res.send({ success: false, message: err })
+        } else {
+            logger.info(`Successfully updated details from I.P: ${req.connection.remoteAddress} and user I.D ${req.verifiedUser._id} `)
+            res.send({ success: true, message: 'User updated successfully' })
+        }
+    })
 })
-
-// Post new message to existing chat
-router.post('/existing', jwtOperations.verifyToken, function (req, res, next) {
-
-});
 
 // Update user details
 router.put('/users/:id', function (req, res, next) {

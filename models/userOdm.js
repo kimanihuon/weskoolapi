@@ -34,9 +34,24 @@ const userSchema = new Schema({
         default: 'cool user'
     },
 
+    about: {
+        type: String,
+        default: 'My tagine'
+    },
+
     online: {
         type: Boolean,
         default: false
+    },
+
+    phone: {
+        type: Number,
+        default: 0
+    },
+
+    seen: {
+        type: Date,
+        default: Date.now
     },
 
     email: {
@@ -48,11 +63,6 @@ const userSchema = new Schema({
     password: {
         type: String,
         required: [true, 'Password field is required']
-    },
-
-    seen: {
-        type: Date,
-        default: Date.now
     },
 
     avatar: {
