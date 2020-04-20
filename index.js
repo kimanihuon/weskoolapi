@@ -150,17 +150,20 @@ io.on('connection', function (client) {
         // console.log(data)
         var verify = jwtOperations.verifySocketToken(client);
         if (verify[0]) {
-            var user = verify[1];
-            socketOperations.send(data, client, user)
+            var verifiedUser = verify[1];
+            socketOperations.send(data, client, verifiedUser, io)
         }
     });
 
-    client.on('listen', function (data) {
-        logger.info(`Client ${client.id} is listening to changes`)
+    client.on('logout', function (data) {
+        client.disconnect();
+        userCache.removeClient(data)
+        logger.info(`Client ${client.id} successfully disconnected from server`);
     });
 
     client.on('disconnect', function (data) {
-        logger.info(`Socket I.D: ${client.id} disconnected from I.P: ${address}`)
+        logger.info(`Socket I.D: ${client.id} disconnected from I.P: ${address}`);
+        console.log(userCache.getAllClients());
     });
 
 })

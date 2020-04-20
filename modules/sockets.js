@@ -2,6 +2,7 @@ const User = require('../models/userOdm');
 const Chat = require('../models/chatOdm');
 const logger = require('../modules/logger');
 const userCache = require('../modules/userCache');
+var id;
 
 function SocketOperations() { }
 
@@ -26,28 +27,27 @@ function associateUser(data, idx, chat) {
     return result;
 }
 
-var id;
-
-function alert(data) {
+// socketio is the socketio instance
+function alert(data, socketio) {
 
     // console.log(data)
 
-    var client = userCache.getClient(data.messageStructure.to);
+    var clientID = userCache.getClient(data.messageStructure.to);
 
-    if (client) {
+    if (clientID) {
         if (data._id) {
             // Remove participants, no need to resend the participants
             // If it's already existing chat
-            client.emit('newMessage', data);
+            socketio.to(clientID).emit('newMessage', data);
             console.log('Emitted new message')
         } else {
             // New chat
             data._id = id;
-            client.emit('newChat', data);
+            socketio.to(clientID).emit('newChat', data);
             console.log('Emitted new chat')
         }
     } else {
-        console.log('client is not online')
+        console.log('clientID is not online')
         // TODO: *Because the user is not online schedule a send operation when online
     }
 }
@@ -67,7 +67,7 @@ SocketOperations.prototype.search = function (data, client) {
     }).limit(5)
 }
 
-SocketOperations.prototype.send = function (data, client, user) {
+SocketOperations.prototype.send = function (data, client, verifiedUser, socketio) {
 
     // user is authenticated username and _id
 
@@ -82,9 +82,9 @@ SocketOperations.prototype.send = function (data, client, user) {
                 client.emit('sentResponse', { success: false })
             } else {
                 var message = res.messages[res.messages.length - 1];
-                logger.info(`Successfully added chat to: ${data._id} from socket: ${client.id} and I.P address: ${address}.`);
+                logger.info(`Successfully added message to: ${data._id} from socket: ${client.id} and I.P address: ${address}.`);
                 client.emit('sentResponse', { success: true, type: 'existing', data: message });
-                alert(data);
+                alert(data, socketio);
             }
         })
 
@@ -121,7 +121,7 @@ SocketOperations.prototype.send = function (data, client, user) {
             if (associateUser) {
                 client.emit('sentResponse', { success: true, type: 'new', data: chat })
                 id = chat._id;
-                alert(data)
+                alert(data, socketio)
             }
         })
     }

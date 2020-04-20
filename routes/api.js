@@ -91,7 +91,6 @@ router.post('/logout', jwtOperations.verifyToken, function (req, res, next) {
     try {
         res.clearCookie("jwtToken");
         res.send({ success: true });
-
         logger.info(`Logout success from I.P ${req.connection.remoteAddress} user I.D. : ${req.verifiedUser._id}`)
 
     } catch (error) {
@@ -114,6 +113,11 @@ router.post('/update', jwtOperations.verifyToken, function (req, res, next) {
             res.send({ success: true, message: 'User updated successfully' })
         }
     })
+})
+
+// Upload files
+router.post('/upload', jwtOperations.verifyToken, function (req, res, next) {
+    console.log('here')
 })
 
 // Update user details
