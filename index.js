@@ -92,9 +92,9 @@ app.use(function (err, req, res, next) {
         // ... myArray.push(obj);
         // var duplicate = {};
         // duplicate[Object.keys(err.keyValue)[0]] = err.keyValue[Object.keys(err.keyValue)[0]]
-        res.status(422).send({ success: false, error: "Duplicate entry", message: `${Object.keys(err.keyValue)[0]} already exists` })
+        res.status(400).send({ success: false, error: "Duplicate entry", message: `${Object.keys(err.keyValue)[0]} already exists` })
     } else {
-        res.status(422).send({ error: "Request failed, refer to server logs" })
+        res.status(400).send({ error: "Request failed, refer to server logs" })
     }
 });
 

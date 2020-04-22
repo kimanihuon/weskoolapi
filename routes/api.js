@@ -6,6 +6,8 @@ const Chat = require('../models/chatOdm');
 const logger = require("../modules/logger");
 const jwtOperations = require("../modules/jwt");
 const keyObject = require("../keys/key");
+// May use for uniquely identifying log streams
+const uniqueString = require('unique-string');
 const secretkey = keyObject.key;
 
 // EXCLUDING A VALUE FROM THE QUERY
