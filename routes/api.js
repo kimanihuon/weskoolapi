@@ -1,14 +1,13 @@
 const express = require('express');
-const jwt = require('jsonwebtoken');
 const router = express.Router();
 const User = require('../models/userOdm');
 const Chat = require('../models/chatOdm');
+const Track = require('../models/trackOdm');
+const trackOperations = require('../modules/track');
 const logger = require("../modules/logger");
 const jwtOperations = require("../modules/jwt");
-const keyObject = require("../keys/key");
 // May use for uniquely identifying log streams
 const uniqueString = require('unique-string');
-const secretkey = keyObject.key;
 
 // EXCLUDING A VALUE FROM THE QUERY
 // User.findById("5e789884e8ce6c7ca9043bab", function (err, user) {
@@ -118,8 +117,16 @@ router.post('/update', jwtOperations.verifyToken, function (req, res, next) {
 })
 
 // Upload files
-router.post('/upload', jwtOperations.verifyToken, function (req, res, next) {
-    console.log('here')
+router.post('/track', jwtOperations.verifyToken, function (req, res, next) {
+    if (req.body._id) {
+        // Update
+        logger.info(`Request: Track update post request from I.P: ${req.connection.remoteAddress}`);
+        trackOperations.update(req, res, next);
+    } else {
+        // Create
+        logger.info(`Request: Track create post request from I.P: ${req.connection.remoteAddress}`);
+        trackOperations.create(req, res, next)
+    }
 })
 
 // Update user details
@@ -196,7 +203,9 @@ function verifyUser(req, index) {
 
 // Get associated chats
 function getReferences(user, req, res, next, type) {
-    User.findOne({ "username": user.username }, { "chats": 1, "friends": 1 }).then((result) => {
+
+    // With the specific fields we want to get
+    User.findOne({ "username": user.username }, { "chats": 1, "friends": 1, "tracks": 1 }).then((result) => {
         // GET ALL CHATS
         Chat.find({ "_id": { "$in": result["chats"] } }).then((chats) => {
             // Assign results to chat
@@ -207,14 +216,20 @@ function getReferences(user, req, res, next, type) {
                 // Assign result to friends
                 user.friends = friends;
 
-                if (type === 'verify') {
-                    logger.info(`Success verified user from database from I.P. from I.P. ${req.connection.remoteAddress}`)
-                    res.send({ authorized: true, details: user })
-                } else if (type === 'login') {
-                    // Generate and sign a json web token
-                    res.cookie('name', 123, { httpOnly: true })
-                    jwtOperations.generateToken(user, req, res, next, user._id);
-                }
+                // Get all tracks
+                Track.find({ "_id": { "$in": result["tracks"] } }).then((tracks) => {
+                    // Assign result to tracks
+                    user.tracks = tracks;
+
+                    if (type === 'verify') {
+                        logger.info(`Success verified user from database from I.P. from I.P. ${req.connection.remoteAddress}`)
+                        res.send({ authorized: true, details: user })
+                    } else if (type === 'login') {
+                        // Generate and sign a json web token
+                        res.cookie('name', 123, { httpOnly: true })
+                        jwtOperations.generateToken(user, req, res, next, user._id);
+                    }
+                });
             });
         });
     }).catch((err) => {

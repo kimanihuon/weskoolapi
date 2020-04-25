@@ -80,7 +80,7 @@ app.use('/api', routes);
 // Custom middleware 
 app.use(function (err, req, res, next) {
     // console.log(err)
-    logger.info(`Error on request from: ${req.connection.remoteAddress} message: ${err.message}`);
+    logger.info(`Error: on request from: ${req.connection.remoteAddress} message: ${err.message}`);
 
     // If duplicate entry error
     if (err.keyValue) {

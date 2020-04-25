@@ -83,6 +83,11 @@ const userSchema = new Schema({
     friends: {
         type: Array,
         default: []
+    },
+
+    tracks: {
+        type: Array,
+        default: []
     }
 
 });

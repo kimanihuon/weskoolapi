@@ -68,7 +68,6 @@ SocketOperations.prototype.search = function (data, client) {
 }
 
 SocketOperations.prototype.send = function (data, client, verifiedUser, socketio) {
-
     // user is authenticated username and _id
 
     // I.P address
@@ -78,11 +77,11 @@ SocketOperations.prototype.send = function (data, client, verifiedUser, socketio
 
         Chat.findByIdAndUpdate(data._id, { $push: { 'messages': data.messageStructure } }, { new: true }, (err, res) => {
             if (err) {
-                logger.info(`An error occured adding message to existing chat: ${data._id} from socket: ${client.id} and I.P address: ${address}. Message: ${err.message}`);
+                logger.info(`Error: An error occured adding message to existing chat: ${data._id} from socket: ${client.id} and I.P address: ${address}. Message: ${err.message}`);
                 client.emit('sentResponse', { success: false })
             } else {
                 var message = res.messages[res.messages.length - 1];
-                logger.info(`Successfully added message to: ${data._id} from socket: ${client.id} and I.P address: ${address}.`);
+                logger.info(`Success: Successfully added message to: ${data._id} from socket: ${client.id} and I.P address: ${address}.`);
                 client.emit('sentResponse', { success: true, type: 'existing', data: message });
                 alert(data, socketio);
             }
