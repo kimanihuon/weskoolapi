@@ -39,10 +39,22 @@ trackOperations.prototype.create = function (req, res, next) {
 trackOperations.prototype.update = function (req, res, next) {
     Track.findByIdAndUpdate(req.body._id, req.body, (err, result) => {
         if (err) {
-            logger.info(`Errpr: Failed to update the track ID: ${req.body._id} from User ID: ${req.verifiedUser._id} from I.P: ${req.connection.remoteAddress}`)
+            logger.info(`Error: Failed to update the track ID: ${req.body._id} from User ID: ${req.verifiedUser._id} from I.P: ${req.connection.remoteAddress} error: ${err}`)
             res.send({ success: false })
         } else {
             logger.info(`Success: updated the track ID: ${result._id} from User ID: ${req.verifiedUser._id} from I.P: ${req.connection.remoteAddress}`)
+            res.send({ success: true })
+        }
+    })
+}
+
+trackOperations.prototype.deleteTrack = function (req, res, next) {
+    Track.findByIdAndDelete(req.body, (err, result) => {
+        if (err) {
+            logger.info(`Error: failed to delete track ID: ${req.body._id} from User ID: ${req.verifiedUser._id} from I.P ${req.connection.remoteAddress} error: ${err}`)
+            res.send({ success: false })
+        } else {
+            logger.info(`Success: deleted the track ID: ${req.body._id} from User ID: ${req.verifiedUser._id} from I.P: ${req.connection.remoteAddress}`)
             res.send({ success: true })
         }
     })

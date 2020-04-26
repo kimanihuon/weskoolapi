@@ -129,6 +129,13 @@ router.post('/track', jwtOperations.verifyToken, function (req, res, next) {
     }
 })
 
+// Delete files
+router.post('/track/delete', jwtOperations.verifyToken, function (req, res, next) {
+    // Update
+    logger.info(`Request: Track delete post request from I.P: ${req.connection.remoteAddress}`);
+    trackOperations.deleteTrack(req, res, next);
+})
+
 // Update user details
 router.put('/users/:id', function (req, res, next) {
     logger.info(`Put request from I.P: ${req.connection.remoteAddress}`)
