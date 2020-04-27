@@ -1,4 +1,4 @@
-const jwtOperations = require('./jwt');
+const jwtOperations = require('./authJwt.js');
 
 function cache() {
     var globalCache;

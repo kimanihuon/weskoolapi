@@ -1,7 +1,7 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const keyObject = require("../keys/key");
-const logger = require("../modules/logger");
+const logger = require("./logger");
 var cookie = require('cookie');
 const secretkey = keyObject.key;
 

@@ -5,7 +5,7 @@ const Chat = require('../models/chatOdm');
 const Track = require('../models/trackOdm');
 const trackOperations = require('../modules/track');
 const logger = require("../modules/logger");
-const jwtOperations = require("../modules/jwt");
+const jwtOperations = require("../modules/authJwt.js");
 // May use for uniquely identifying log streams
 const uniqueString = require('unique-string');
 
@@ -31,30 +31,36 @@ router.get('/access', function (req, res, next) {
 
 // Add users to db
 router.post('/register', function (req, res, next) {
-    logger.info(`Register post request from I.P: ${req.connection.remoteAddress}`)
+    logger.info(`Request: Register post request from I.P: ${req.connection.remoteAddress}`);
 
-    // var user = new User(req.body);
-    // user.save();
-    // ... similar to:
-    User.create(req.body).then(function (user) {  // Javascript promise // return saved user
+    let newUser = new User();
 
-        // Filtered details for the user. Excluding the password
-        user.password = true
+    newUser.email = req.body.email;
+    newUser.username = req.body.username;
+    newUser.setPassword(req.body.password);
 
-        // Generate token for user
-        jwtOperations.generateToken(user, req, res, next, user._id);
-        logger.info(`Registration successful from I.P: ${req.connection.remoteAddress} User ID: ${user._id}`)
-    }).catch(
-        next
-    ) // Send all the data to the next function
+    newUser.save((err, user) => {
 
-    // res.send({ type: 'POST', name: req.body.name, rank: req.body.class });
+        if (err) {
+            logger.info(`Error: Registration failed from I.P: ${req.connection.remoteAddress} error: ${err}`)
+            res.status(400).send({
+                message: "Registration failed."
+            });
+        } else {
+            logger.info(`Registration successful from I.P: ${req.connection.remoteAddress} User ID: ${user._id}`);
+
+            jwtOperations.generateToken(trimUser(user), req, res, next, user._id);
+            // res.status(201).send({
+            //     message: "Registration successful."
+            // });
+        }
+    });
 });
 
 // Validate whether user exists
 router.post('/login', function (req, res, next) {
 
-    logger.info(`Login request from I.P: ${req.connection.remoteAddress}`)
+    logger.info(`Login request from I.P: ${req.connection.remoteAddress}`);
 
     // If username is provided
     if (req.body.username) {
@@ -62,8 +68,8 @@ router.post('/login', function (req, res, next) {
         // If email is provided
     } else if (req.body.email) {
         validate('email', req, res, next)
-        //  If nothing is provided
     } else {
+        //  If nothing is provided
         logger.info(`Login failed from I.P: ${req.connection.remoteAddress} No credentials provided`)
         res.send({
             success: false,
@@ -158,21 +164,17 @@ function validate(type, req, res, next) {
     obj[type] = req.body[type]
 
     // resolves to the Mongoose document if MongoDB found a document with the given id, or null if no document was found.
-    User.findOne(obj).then(function (user) {
+    User.findOne(obj, function (err, user) {
         if (user) {
             // Resolve password
-            if (req.body.password == user.password) {
-
-                logger.info(`Login successful from I.P: ${req.connection.remoteAddress} User ID: ${user._id}`);
-
-                // Filtered details for the user. Excluding the password
-                user.password = true
+            if (user.validPassword(req.body.password)) {
+                logger.info(`Success: Login successful from I.P: ${req.connection.remoteAddress} User ID: ${user._id}`);
 
                 // Get chats then generate token
-                getReferences(user, req, res, next, 'login');
+                getReferences(trimUser(user), req, res, next, 'login');
 
             } else {
-                logger.info(`Login failed from I.P: ${req.connection.remoteAddress} Invalid credentials provided`)
+                logger.info(`Error: Login failed from I.P: ${req.connection.remoteAddress} Invalid credentials provided`)
                 res.send({
                     success: false,
                     message: "Invalid credentials"
@@ -180,32 +182,13 @@ function validate(type, req, res, next) {
             }
 
         } else {
-            logger.info(`Login failed from I.P: ${req.connection.remoteAddress} Invalid User type`)
+            logger.info(`Login failed from I.P: ${req.connection.remoteAddress} Invalid User type error: ${err}`)
             res.send({
                 success: false,
                 message: "Invalid login details"
             })
         }
     }).catch(next);
-}
-
-// Check whether user exists
-function verifyUser(req, index) {
-
-    var result = User.find({ _id: req.body.single.participants[index].id }).exec(function (err, user) {
-        if (err) {
-            console.log('boom');
-
-            console.log(err.message);
-            return false
-            // break
-        } else {
-            // console.log(user)
-            return true
-        }
-    });
-
-    return result;
 }
 
 // Get associated chats
@@ -230,10 +213,11 @@ function getReferences(user, req, res, next, type) {
 
                     if (type === 'verify') {
                         logger.info(`Success verified user from database from I.P. from I.P. ${req.connection.remoteAddress}`)
+
                         res.send({ authorized: true, details: user })
                     } else if (type === 'login') {
                         // Generate and sign a json web token
-                        res.cookie('name', 123, { httpOnly: true })
+                        // res.cookie('name', 123, { httpOnly: true })
                         jwtOperations.generateToken(user, req, res, next, user._id);
                     }
                 });
@@ -242,6 +226,15 @@ function getReferences(user, req, res, next, type) {
     }).catch((err) => {
         console.log(err)
     })
+}
+
+// Remove unnecessary details
+function trimUser(user) {
+    var newUser = JSON.parse(JSON.stringify(user))
+    delete newUser.salt;
+    delete newUser.hash;
+
+    return newUser;
 }
 
 module.exports = router;

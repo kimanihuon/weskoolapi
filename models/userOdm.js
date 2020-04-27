@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+var crypto = require('crypto');
 
 // Schema template generator
 const Schema = mongoose.Schema;
@@ -34,6 +35,10 @@ const userSchema = new Schema({
         default: 'cool user'
     },
 
+    hash: String,
+
+    salt: String,
+
     about: {
         type: String,
         default: 'My tagine'
@@ -58,11 +63,6 @@ const userSchema = new Schema({
         type: String,
         required: [true, 'Email field is required'],
         unique: true
-    },
-
-    password: {
-        type: String,
-        required: [true, 'Password field is required']
     },
 
     avatar: {
@@ -92,9 +92,23 @@ const userSchema = new Schema({
 
 });
 
+// Auth
+
+// Method to set salt and hash the password for a user
+userSchema.methods.setPassword = function (password) {
+    // Creating a unique salt for a particular user 
+    this.salt = crypto.randomBytes(16).toString('hex');
+    // Hashing user's salt and password with 100 iterations, 64 length and sha512 digest 
+    this.hash = crypto.pbkdf2Sync(password, this.salt, 100, 64, `sha512`).toString(`hex`);
+}
+
+userSchema.methods.validPassword = function (password) {
+    var hash = crypto.pbkdf2Sync(password, this.salt, 100, 64, `sha512`).toString(`hex`);
+    return this.hash === hash;
+}
+
 // Prevent duplicate entries
 userSchema.index({ email: 1 }, { unique: true });
-userSchema.index({ chats: 1 }, { unique: true });
 
 // Generate object model for collection: users, using: userSchema
 const User = mongoose.model('user', userSchema);

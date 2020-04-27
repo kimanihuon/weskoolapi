@@ -5,7 +5,7 @@ const http = require('http');
 const https = require("https");
 const socket = require('socket.io');
 const socketOperations = require('./modules/sockets');
-const jwtOperations = require('./modules/jwt');
+const jwtOperations = require('./modules/authJwt.js');
 const userCache = require('./modules/userCache');
 
 // For csrf protection
