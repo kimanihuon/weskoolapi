@@ -20,14 +20,21 @@ const logger = require("./modules/logger.js");
 
 // Implement environment variables
 var port = 5443;
-var env = 'Development';
+var env = process.env.ENV;
 
 var app = express();
 
 // For Cross Origin Request Sharing Authorization
-// TODO: REMEMBER TO USE VARIABLE FOR ORIGIN
+
+var whitelist = ['https://weskool.team', 'https://weskool.team', 'http://localhost:8080']
 const corsOptions = {
-    origin: 'http://localhost:8080',
+    origin: function (origin, callback) {
+        if (whitelist.indexOf(origin) !== -1) {
+            callback(null, true)
+        } else {
+            callback(new Error('Not allowed by CORS'))
+        }
+    },
     credentials: true,
 }
 
@@ -61,13 +68,13 @@ var options = {
 }
 
 // connect to mongodb
-mongoose.connect(uri, options, function(err){
+mongoose.connect(uri, options, function (err) {
     if (err) {
-        logger.info(`Connection error: ${err}`)   
+        logger.info(`Connection error: ${err}`)
     } {
         logger.info(`Successfully connected to mongo db`)
     }
-}); 
+});
 
 // mongoose.Promise = global.Promise
 // res.end() to end the response
@@ -100,25 +107,24 @@ app.use(function (err, req, res, next) {
 
 var server;
 
-if (env === 'Development') {
-    httpsServer = http.createServer(app);
-    server = httpsServer.listen(port, () => logger.info("running server on from port:::::::" + port));
-
-} else if (env === 'Production') {
+if (env == 'production') {
     // TLS Certificates for https
     var tls = {
         Production: {
             privateKey() {
-                return fs.readFileSync('/etc/letsencrypt/live/', 'utf8')
+                return fs.readFileSync(process.env.CERTKEY, 'utf8')
             },
             certificate() {
-                return fs.readFileSync('/etc/letsencrypt/live/', 'utf8')
+                return fs.readFileSync(process.env.CERTCHAIN, 'utf8')
             },
         }
     }
 
     var tlsCredentials = { key: tls.Production.privateKey(), cert: tls.Production.certificate() }
     httpsServer = https.createServer(tlsCredentials, app);
+    server = httpsServer.listen(port, () => logger.info("Success: secure server running on from port:::::::" + port));
+} else {
+    httpsServer = http.createServer(app);
     server = httpsServer.listen(port, () => logger.info("running server on from port:::::::" + port));
 }
 
