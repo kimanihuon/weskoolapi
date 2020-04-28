@@ -22,4 +22,4 @@ COPY . .
 
 EXPOSE 6443
 
-CMD [ "node", "index.js" ]
+CMD [ "node", "uploads.js" ]
