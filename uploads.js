@@ -1,6 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const http = require('http');
+const https = require("https");
 const homedir = require('os').homedir();
 var env = process.env.ENV;
 const formidable = require('formidable');

@@ -1,6 +1,7 @@
 var express = require('express');
 var app = express();
 const http = require('http');
+const https = require("https");
 const homedir = require('os').homedir();
 var env = process.env.ENV;
 const path = '/projs/DockerWeskool';
