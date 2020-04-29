@@ -5,7 +5,6 @@ ARG NODE_ENV=production
 ENV NODE_ENV=${NODE_ENV}
 # ENV ENV=${NODE_ENV}
 
-RUN mkdir -p /modules
 RUN mkdir -p /db/uploads
 RUN mkdir -p /etc/letsencrypt/live/weskool.team
 
