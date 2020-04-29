@@ -18,7 +18,7 @@ var port = 6443;
 
 var csrfProtection = csrf({ cookie: true });
 
-var whitelist = ['https://weskool.team', 'https://weskool.team', 'http://localhost:8080']
+var whitelist = ['https://weskool.team', 'https://weskool.team', 'http://localhost:80']
 const corsOptions = {
     origin: function (origin, callback) {
         if (whitelist.indexOf(origin) !== -1) {
