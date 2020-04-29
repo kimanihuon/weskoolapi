@@ -62,7 +62,7 @@ app.post('/upload', jwtOperations.verifyToken, function (req, res, next) {
         } else {
             var imagename = req.verifiedUser._id + '__' + files.file.name
             var oldpath = files.file.path;
-            var newpath = (env == 'production' ? '/db/uploads/' : (homedir + `/projs/DockerWeskool/db/uploads/`) + imagename);
+            var newpath = (env == 'production' ? '/db/uploads/' + imagename  : (homedir + `/projs/DockerWeskool/db/uploads/`) + imagename);
 
             fs.copyFile(oldpath, newpath, (err) => {
                 if (err) {
