@@ -9,6 +9,7 @@ WORKDIR /usr/src/app
 
 RUN mkdir -p /modules
 RUN mkdir -p /db/uploads
+RUN mkdir -p /etc/letsencrypt/live/weskool.team/
 
 # copy both 'package.json' and 'package-lock.json' (if available)
 # ... the asterisk is for the wild card name feature
