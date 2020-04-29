@@ -18,7 +18,7 @@ var port = 6443;
 
 var csrfProtection = csrf({ cookie: true });
 
-var whitelist = ['https://weskool.team', 'https://weskool.team', 'http://localhost:80']
+var whitelist = ['https://weskool.team', 'https://weskool.team', 'http://localhost:80', 'http://localhost:8080']
 const corsOptions = {
     origin: function (origin, callback) {
         if (whitelist.indexOf(origin) !== -1) {
@@ -64,17 +64,24 @@ app.post('/upload', jwtOperations.verifyToken, function (req, res, next) {
             var oldpath = files.file.path;
             var newpath = (env == 'production' ? '/db/uploads/' : (homedir + `/projs/DockerWeskool/db/uploads/`) + imagename);
 
-            fs.rename(oldpath, newpath, function (err) {
+            fs.copyFile(oldpath, newpath, (err) => {
                 if (err) {
                     logger.info(`Error saving file to server from I.P: ${req.connection.remoteAddress} err: ${err} UTID: ${UTID}`);
                     res.status(500);
                     res.send({ success: false });
                 } else {
-                    logger.info(`Successfully saved file to server from I.P: ${req.connection.remoteAddress} UTID: ${UTID}`)
+                    logger.info(`Success: Successfully saved file to server from I.P: ${req.connection.remoteAddress} UTID: ${UTID}`)
                     res.status(201)
                     res.send({ success: true, url: baseUrl + imagename });
                 }
             });
+            fs.unlink(oldpath, (err) => {
+                if (err) {
+                    logger.info(`Error: failed to unlink file from I.P: ${req.connection.remoteAddress} err: ${err} UTID: ${UTID}`);
+                } else {
+                    logger.info(`Success: successfully unlinked file from server from I.P: ${req.connection.remoteAddress} err: ${err} UTID: ${UTID}`);
+                }
+            })
         }
     });
 
