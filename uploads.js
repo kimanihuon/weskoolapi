@@ -98,7 +98,7 @@ app.use(function (err, req, res, next) {
 });
 
 
-if (env == 'production') {
+if (env == 'producdsdstion') {
     // TLS Certificates for https
     var tls = {
         Production: {
