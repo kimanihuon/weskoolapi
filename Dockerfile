@@ -1,9 +1,9 @@
 # FROM node:lts-alpine
 FROM node:lts-alpine 
 
-ARG NODE_ENV=development
+ARG NODE_ENV=production
 ENV NODE_ENV=${NODE_ENV}
-ENV ENV=${NODE_ENV}
+# ENV ENV=${NODE_ENV}
 
 RUN mkdir -p /modules
 RUN mkdir -p /db/uploads
