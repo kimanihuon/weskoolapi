@@ -67,7 +67,7 @@ const userSchema = new Schema({
 
     avatar: {
         type: String,
-        default: 'https://cdn.vuetifyjs.com/images/lists/4.jpg'
+        default: 'https://weskool.team:7443/images/social.svg'
     },
 
     created_date: {
