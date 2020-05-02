@@ -57,7 +57,7 @@ app.use(bodyParser.json());
 
 // Define replica db parameters
 // var uri = 'mongodb://user:pw@host1.com:27017,host2.com:27017,host3.com:27017/testdb'
-var uri = 'mongodb://localhost:27017,localhost:27018,localhost:27019/weskool?replicaSet=rs0'
+var uri = 'mongodb://127.0.0.1:27017,127.0.0.1:27018,127.0.0.1:27019/weskool?replicaSet=rs0'
 
 // Options
 var options = {
