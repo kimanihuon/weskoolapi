@@ -9,12 +9,16 @@ const uniqueString = require('unique-string');
 const logger = require('./modules/logger');
 const jwtOperations = require('./modules/authJwt');
 const cookieParser = require('cookie-parser');
+const mongoose = require('mongoose');
+const User = require('./models/userOdm');
+var defaultAvatarUrl = 'https://weskool.team:7443/images/social.svg'
 
 var fs = require('fs');
 var cors = require('cors');
 var csrf = require('csurf');
 var app = express();
 var port = 6443;
+var uri = 'mongodb://127.0.0.1:27017,127.0.0.1:27018,127.0.0.1:27019/weskool?replicaSet=rs0'
 
 var csrfProtection = csrf({ cookie: true });
 
@@ -29,6 +33,23 @@ const corsOptions = {
     },
     credentials: true,
 }
+
+// Options
+var options = {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    useFindAndModify: false,
+    useCreateIndex: true
+}
+
+// connect to mongodb
+mongoose.connect(uri, options, function (err) {
+    if (err) {
+        logger.info(`Connection error: ${err}`)
+    } {
+        logger.info(`Successfully connected to mongo db`)
+    }
+});
 
 // parse cookies
 // we need this because "cookie" is true in csrfProtection
@@ -45,13 +66,14 @@ app.use(bodyParser.json());
 // Upload files
 app.post('/upload', jwtOperations.verifyToken, function (req, res, next) {
 
-    logger.info(`Upload request from I.P: ${req.connection.remoteAddress} UTID: ${UTID}`);
-
-    var baseUrl = ( env == 'production' ? 'https://weskool.team:7443/images/' : 'http://localhost:7443/images/')
-
     // uNIQUE TRANSACTION I.D
     // ... For uniquely identifying server logs
     var UTID = uniqueString();
+
+    logger.info(`Upload request from I.P: ${req.connection.remoteAddress} UTID: ${UTID}`);
+
+    var baseUrl = (env == 'production' ? 'https://weskool.team:7443/images/' : 'http://localhost:7443/images/')
+
     var form = new formidable.IncomingForm();
     form.parse(req, function (err, fields, files) {
 
@@ -60,9 +82,10 @@ app.post('/upload', jwtOperations.verifyToken, function (req, res, next) {
             res.status(400);
             res.json({ success: false, message: 'Unable to parse files' })
         } else {
-            var imagename = req.verifiedUser._id + '__' + files.file.name
+
+            var imagename = req.verifiedUser._id + '__' + (req.query.profile ? 'profile.png' : files.file.name)
             var oldpath = files.file.path;
-            var newpath = (env == 'production' ? '/db/uploads/' + imagename  : (homedir + `/projs/DockerWeskool/db/uploads/`) + imagename);
+            var newpath = (env == 'production' ? '/db/uploads/' + imagename : (homedir + `/projs/DockerWeskool/db/uploads/`) + imagename);
 
             fs.copyFile(oldpath, newpath, (err) => {
                 if (err) {
@@ -70,9 +93,14 @@ app.post('/upload', jwtOperations.verifyToken, function (req, res, next) {
                     res.status(500);
                     res.send({ success: false });
                 } else {
-                    logger.info(`Success: Successfully saved file to server from I.P: ${req.connection.remoteAddress} UTID: ${UTID}`)
-                    res.status(201)
-                    res.send({ success: true, url: baseUrl + imagename });
+                    // If profile picture upload
+                    if (req.query.profile) {
+                        update(req, res, next, baseUrl, imagename, UTID)
+                    } else {
+                        logger.info(`Success: Successfuly saved file to server from I.P: ${req.connection.remoteAddress} UTID: ${UTID}`)
+                        res.status(201)
+                        res.send({ success: true, url: baseUrl + imagename, image: imagename });
+                    }
                 }
             });
             fs.unlink(oldpath, (err) => {
@@ -87,7 +115,49 @@ app.post('/upload', jwtOperations.verifyToken, function (req, res, next) {
 
 });
 
-app.post('/remove', jwtOperations.verifyToken, function (req, res, next) {
+app.delete('/delete', jwtOperations.verifyToken, function (req, res, next) {
+
+    // uNIQUE TRANSACTION I.D
+    // ... For uniquely identifying server logs
+    var UTID = uniqueString();
+
+    logger.info(`Delete request from I.P: ${req.connection.remoteAddress} UTID: ${UTID}`);
+
+    var path = (env == 'production' ? '/db/uploads/' + req.body.file : (homedir + `/projs/DockerWeskool/db/uploads/`) + req.body.file);
+
+    fs.unlink(path, (err) => {
+        if (err) {
+            logger.info(`Error: failed to delete file from I.P: ${req.connection.remoteAddress} err: ${err} UTID: ${UTID}`);
+            res.status(501);
+            res.send({ success: false })
+        } else {
+
+            if (req.query.profile) {
+                User.updateOne({ _id: req.verifiedUser._id }, { avatar: defaultAvatarUrl }, function (err, response) {
+                    if (err) {
+                        logger.info(`Error: Failed to update user avatar from I.P ${req.connection.remoteAddress} err: ${err} UTID: ${UTID}`);
+                        res.status(500);
+                        res.send({ success: false });
+                        fs.unlink(newpath, (err) => {
+                            if (err) {
+                                logger.info(`Error: failed to unlink file from I.P: ${req.connection.remoteAddress} err: ${err} UTID: ${UTID}`);
+                            } else {
+                                logger.info(`Success: successfully unlinked file from server from I.P: ${req.connection.remoteAddress} err: ${err} UTID: ${UTID}`);
+                            }
+                        })
+                    } else {
+                        logger.info(`Success: Updated user avatar and successfully deleted file from server from I.P: ${req.connection.remoteAddress} UTID: ${UTID}`)
+                        res.status(201)
+                        res.send({ success: true });
+                    }
+                });
+            } else {
+                logger.info(`Success: Successfully deleted file from server from I.P: ${req.connection.remoteAddress} UTID: ${UTID}`)
+                res.status(201)
+                res.send({ success: true });
+            }
+        }
+    })
 
 });
 
@@ -105,6 +175,29 @@ app.use(function (err, req, res, next) {
     }
 });
 
+function update(req, res, next, baseUrl, imagename, UTID) {
+    User.updateOne({ _id: req.verifiedUser._id }, { avatar: baseUrl + imagename }, function (err, response) {
+        if (err) {
+            logger.info(`Error: Failed to update user avatar from I.P ${req.connection.remoteAddress} err: ${err} UTID: ${UTID}`);
+            res.status(500);
+            res.send({ success: false });
+            fs.unlink(newpath, (err) => {
+                if (err) {
+                    logger.info(`Error: failed to unlink file from I.P: ${req.connection.remoteAddress} err: ${err} UTID: ${UTID}`);
+                } else {
+                    logger.info(`Success: successfully unlinked file from server from I.P: ${req.connection.remoteAddress} err: ${err} UTID: ${UTID}`);
+                }
+            })
+        } else {
+
+            logger.info(`Success: Updated user avatar and Successfully saved file to server from I.P: ${req.connection.remoteAddress} UTID: ${UTID}`)
+            res.status(201);
+
+            // Include dummy parameter to prevent caching by the browser
+            res.send({ success: true, url: baseUrl + imagename + `?dummy=${Math.floor(Math.random() * 1000)}`, image: imagename });
+        }
+    })
+}
 
 if (env == 'production') {
     // TLS Certificates for https

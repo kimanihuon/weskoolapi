@@ -8,9 +8,16 @@ const path = '/projs/DockerWeskool';
 const logger = require('./modules/logger');
 var port = 7443;
 const fs = require('fs');
+var cors = require('cors');
 
+const corsOptions = {
+    origin: "*",
+    credentials: true,
+}
+
+app.use(cors(corsOptions));
 app.use(express.static(__dirname + '/public'));
-app.use('/images', express.static( env == 'production' ? '/db/uploads' : (homedir + path + '/db/uploads/')));
+app.use('/images', express.static(env == 'production' ? '/db/uploads' : (homedir + path + '/db/uploads/')));
 
 if (env == 'production') {
     // TLS Certificates for https

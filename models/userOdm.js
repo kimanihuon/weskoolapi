@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 var crypto = require('crypto');
+var defaultAvatarUrl = 'https://weskool.team:7443/images/social.svg'
 
 // Schema template generator
 const Schema = mongoose.Schema;
@@ -67,7 +68,7 @@ const userSchema = new Schema({
 
     avatar: {
         type: String,
-        default: 'https://weskool.team:7443/images/social.svg'
+        default: defaultAvatarUrl
     },
 
     created_date: {
@@ -92,8 +93,11 @@ const userSchema = new Schema({
 
 });
 
-// Auth
+userSchema.methods.getDefaultUrl = function() {
+    return defaultAvatarUrl
+}
 
+// Auth
 // Method to set salt and hash the password for a user
 userSchema.methods.setPassword = function (password) {
     // Creating a unique salt for a particular user 
