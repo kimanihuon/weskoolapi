@@ -26,7 +26,7 @@ var app = express();
 
 // For Cross Origin Request Sharing Authorization
 
-var whitelist = ['https://weskool.team', 'https://weskool.team', 'http://localhost:8080']
+var whitelist = ['https://weskool.team', 'https://weskool.team', 'http://localhost:8080', 'http://localhost:80']
 const corsOptions = {
     origin: function (origin, callback) {
         if (whitelist.indexOf(origin) !== -1) {
@@ -42,12 +42,12 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 // setup route middlewares
-var csrfProtection = csrf({ cookie: true });
+// var csrfProtection = csrf({ cookie: true });
 
 // parse cookies
 // we need this because "cookie" is true in csrfProtection
 app.use(cookieParser());
-app.use(csrfProtection);
+// app.use(csrfProtection);
 
 // Body parser Middleware: Code that runs in between the request and the response
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -71,7 +71,7 @@ var options = {
 mongoose.connect(uri, options, function (err) {
     if (err) {
         logger.info(`Connection error: ${err}`)
-    } {
+    } else {
         logger.info(`Successfully connected to mongo db`)
     }
 });
