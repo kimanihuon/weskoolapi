@@ -26,7 +26,7 @@ var app = express();
 
 // For Cross Origin Request Sharing Authorization
 
-var whitelist = ['https://weskool.team', 'https://weskool.team', 'http://localhost:8080', 'http://localhost:80']
+var whitelist = ['https://weskool.team', 'https://weskool.team', 'http://localhost:8080', 'http://localhost:80', 'http://localhost']
 const corsOptions = {
     origin: function (origin, callback) {
         if (whitelist.indexOf(origin) !== -1) {
@@ -70,9 +70,9 @@ var options = {
 // connect to mongodb
 mongoose.connect(uri, options, function (err) {
     if (err) {
-        logger.info(`Connection error: ${err}`)
+        logger.error(`Connection error: ${err}`)
     } else {
-        logger.info(`Successfully connected to mongo db`)
+        logger.success(`Successfully connected to mongo db`)
     }
 });
 
@@ -87,7 +87,7 @@ app.use('/api', routes);
 // Custom middleware 
 app.use(function (err, req, res, next) {
     // console.log(err)
-    logger.info(`Error: on request from: ${req.connection.remoteAddress} message: ${err.message}`);
+    logger.error(`Error: on request from: ${req.connection.remoteAddress} message: ${err.message}`);
 
     // If duplicate entry error
     if (err.keyValue) {
