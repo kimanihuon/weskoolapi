@@ -15,12 +15,12 @@ var defaultAvatarUrl = 'https://weskool.team:7443/images/social.svg'
 
 var fs = require('fs');
 var cors = require('cors');
-var csrf = require('csurf');
+// var csrf = require('csurf');
 var app = express();
 var port = 6443;
 var uri = 'mongodb://127.0.0.1:27017,127.0.0.1:27018,127.0.0.1:27019/weskool?replicaSet=rs0'
 
-var csrfProtection = csrf({ cookie: true });
+// var csrfProtection = csrf({ cookie: true });
 
 var whitelist = ['https://weskool.team', 'https://weskool.team', 'http://localhost:80', 'http://localhost:8080']
 const corsOptions = {
@@ -57,7 +57,7 @@ app.use(cookieParser());
 app.use(cors(corsOptions));
 
 // Csrf protection
-app.use(csrfProtection);
+// app.use(csrfProtection);
 
 // Body parser Middleware: Code that runs in between the request and the response
 app.use(bodyParser.urlencoded({ extended: false }));
