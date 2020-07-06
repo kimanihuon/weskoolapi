@@ -17,10 +17,10 @@ const uniqueString = require('unique-string');
 
 // Get CSRF Token
 router.get('/access', function (req, res, next) {
-    var csrfToken = req.csrfToken()
+    // var csrfToken = req.csrfToken() // No longer useful after removing csrf module
     logger.info(`Get request from I.P: ${req.connection.remoteAddress} CSRF Token: ${csrfToken}`)
     // Pass the Csrf Token;
-    res.cookie('XSRF-TOKEN', csrfToken);
+    // res.cookie('XSRF-TOKEN', csrfToken); // No longer useful after removing csrf module
     // res.locals._csrf = csrfToken;
     res.json({
         success: true,

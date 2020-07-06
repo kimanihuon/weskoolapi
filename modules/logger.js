@@ -12,4 +12,8 @@ Logger.prototype.error = function (logText) {
     console.log(new Date() + 'error:::::' + logText);
 };
 
+Logger.prototype.success = function (logText) {
+    console.log(new Date() + 'success:::::' + logText);
+};
+
 module.exports = new Logger();
