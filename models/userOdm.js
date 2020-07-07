@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 var crypto = require('crypto');
-var defaultAvatarUrl = 'https://weskool.team:7443/images/social.svg'
+var defaultAvatarUrl = 'https://image.flaticon.com/icons/svg/929/929422.svg'
 
 // Schema template generator
 const Schema = mongoose.Schema;

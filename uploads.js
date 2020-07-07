@@ -11,7 +11,7 @@ const jwtOperations = require('./modules/authJwt');
 const cookieParser = require('cookie-parser');
 const mongoose = require('mongoose');
 const User = require('./models/userOdm');
-var defaultAvatarUrl = 'https://weskool.team:7443/images/social.svg'
+var defaultAvatarUrl = 'https://image.flaticon.com/icons/svg/929/929422.svg'
 
 var fs = require('fs');
 var cors = require('cors');
