@@ -57,7 +57,15 @@ const messageStructure = new Schema({
 const chat = new Schema({
     messageStructure: messageStructure,
     participants: [user],
-    messages: [messageStructure]
+    messages: [messageStructure],
+    unread: {
+        type: Number,
+        default: 0
+    },
+    seen: {
+        type: Boolean,
+        default: false
+    }
 })
 
 const Chat = mongoose.model('chat', chat);

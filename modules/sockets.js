@@ -75,7 +75,8 @@ SocketOperations.prototype.send = function (data, client, verifiedUser, socketio
 
     if ((typeof data._id) !== 'undefined') {
 
-        Chat.findByIdAndUpdate(data._id, { $push: { 'messages': data.messageStructure } }, { new: true }, (err, res) => {
+        // If chat exists
+        Chat.findByIdAndUpdate(data._id, { $push: { 'messages': data.messageStructure }, $inc: { "unread": 1 } }, { new: true }, (err, res) => {
             if (err) {
                 logger.info(`Error: An error occured adding message to existing chat: ${data._id} from socket: ${client.id} and I.P address: ${address}. Message: ${err.message}`);
                 client.emit('sentResponse', { success: false })
@@ -89,18 +90,21 @@ SocketOperations.prototype.send = function (data, client, verifiedUser, socketio
 
     } else {
 
+        // if chat doesn't exist
+
         // Copy of message structure
         let struct = JSON.parse(JSON.stringify(data.messageStructure));
 
         // Clear active chat contents for use in the front end
-        // data.messageStructure.to = null;
-        // data.messageStructure.from = null;
         data.messageStructure.contents.text = '';
         data.messageStructure.contents.images = [];
         data.messageStructure.contents.timestamp = '';
 
         // Insert message structure to messages
         data.messages.push(struct);
+
+        data.seen = false;
+        data.unread = 1;
 
         Chat.create(data).then(function (chat) {
 
