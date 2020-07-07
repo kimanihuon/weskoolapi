@@ -11,6 +11,7 @@ const jwtOperations = require('./modules/authJwt');
 const cookieParser = require('cookie-parser');
 const mongoose = require('mongoose');
 const User = require('./models/userOdm');
+const path = '/projs/weskool/DockerWeskool';
 var defaultAvatarUrl = 'https://image.flaticon.com/icons/svg/929/929422.svg'
 
 var fs = require('fs');
@@ -85,7 +86,7 @@ app.post('/upload', jwtOperations.verifyToken, function (req, res, next) {
 
             var imagename = req.verifiedUser._id + '__' + (req.query.profile ? 'profile.png' : files.file.name)
             var oldpath = files.file.path;
-            var newpath = (env == 'production' ? '/db/uploads/' + imagename : (homedir + `/projs/DockerWeskool/db/uploads/`) + imagename);
+            var newpath = (env == 'production' ? '/db/uploads/' + imagename : (homedir + `${path}/db/uploads/`) + imagename);
 
             fs.copyFile(oldpath, newpath, (err) => {
                 if (err) {
