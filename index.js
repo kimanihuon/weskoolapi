@@ -172,6 +172,14 @@ io.on('connection', function (client) {
         console.log(userCache.getAllClients());
     });
 
+    client.on('markSeen', function(id){
+        var verify = jwtOperations.verifySocketToken(client);
+        if (verify[0]) {
+            var verifiedUser = verify[1];
+            socketOperations.updateChatStatus(id, client, verifiedUser, io)
+        }
+    })
+
 })
 
 // // To update, the field must first be defined in the schema

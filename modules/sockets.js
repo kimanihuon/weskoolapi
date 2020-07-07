@@ -76,7 +76,7 @@ SocketOperations.prototype.send = function (data, client, verifiedUser, socketio
     if ((typeof data._id) !== 'undefined') {
 
         // If chat exists
-        Chat.findByIdAndUpdate(data._id, { $push: { 'messages': data.messageStructure }, $inc: { "unread": 1 } }, { new: true }, (err, res) => {
+        Chat.findByIdAndUpdate(data._id, { $push: { 'messages': data.messageStructure }, $inc: { "unread": 1 }, $set: { "seen": false } }, { new: true }, (err, res) => {
             if (err) {
                 logger.info(`Error: An error occured adding message to existing chat: ${data._id} from socket: ${client.id} and I.P address: ${address}. Message: ${err.message}`);
                 client.emit('sentResponse', { success: false })
@@ -128,6 +128,28 @@ SocketOperations.prototype.send = function (data, client, verifiedUser, socketio
             }
         })
     }
+}
+
+// Use this logic for read receipts while online
+SocketOperations.prototype.updateChatStatus = function (data, client, verifiedUser, socketio) {
+    // user is authenticated username and _id
+
+    // I.P address
+    var address = client.handshake.address;
+
+    Chat.findByIdAndUpdate(data.chatId, { $set: { "unread": 0, "seen": true } }, (err, res) => {
+        if (err) {
+            logger.error(`Error: An error occured while updating existing chat: ${data.chatId} from socket: ${client.id} and I.P address: ${address}. Message: ${err.message}`);
+            client.emit('sentResponse', { success: false })
+        } else {
+            logger.success(`Success: Successfully updated chat with chatID: ${data.chatId} from socket: ${client.id} and I.P address: ${address}.`);
+            client.emit('markSeenResponse', { success: true, type: 'existing', data: data });
+
+            // USE ALERT FOR READ RECEIPTS
+            // alert(data, socketio);
+        }
+    })
+
 }
 
 module.exports = new SocketOperations
