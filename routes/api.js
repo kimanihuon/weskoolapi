@@ -78,7 +78,7 @@ router.post('/login/verify', jwtOperations.verifyToken, function (req, res, next
             logger.info(`Error getting user details from I.P. ${req.connection.remoteAddress}, message: ${err} or not registered`);
             res.send({ authorized: false, message: "Unable to get user. Probably not registered" })
         } else {
-            getReferences(user, req, res, next, 'verify')
+            getReferences( trimUser(user), req, res, next, 'verify')
         }
     }).select('-password')
 });
@@ -191,7 +191,7 @@ function getReferences(user, req, res, next, type) {
         Chat.find({ "_id": { "$in": result["chats"] } }).then((chats) => {
             // Assign results to chat
             user.chats = chats;
-
+            
             // GET ALL FRIENDS
             User.find({ "_id": { "$in": result["friends"] } }).then((friends) => {
                 // Assign result to friends
@@ -234,6 +234,7 @@ function createAdmin() {
     let Admin = new User();
     Admin.email = adminEmail;
     Admin.username = adminUsername;
+    Admin.admin = true;
     Admin.setPassword(adminPassword);
 
     Admin.save((err, user) => {
