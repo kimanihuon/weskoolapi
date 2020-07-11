@@ -89,6 +89,10 @@ const userSchema = new Schema({
     tracks: {
         type: Array,
         default: []
+    },
+
+    admin: {
+        type: Boolean
     }
 
 });

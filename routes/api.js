@@ -8,12 +8,17 @@ const logger = require("../modules/logger");
 const jwtOperations = require("../modules/authJwt.js");
 // May use for uniquely identifying log streams
 const uniqueString = require('unique-string');
+const adminEmail = process.env.USER_EMAIL;
+const adminUsername = process.env.USER_NAME;
+const adminPassword = process.env.PASSWORD;
 
 // EXCLUDING A VALUE FROM THE QUERY
 // User.findById("5e789884e8ce6c7ca9043bab", function (err, user) {
 //     console.log(user)
 // }).select('-password')
 
+// Create admin
+createAdmin();
 
 // Add users to db
 router.post('/register', function (req, res, next) {
@@ -221,6 +226,23 @@ function trimUser(user) {
     delete newUser.hash;
 
     return newUser;
+}
+
+// Create admin user
+function createAdmin() {
+    // Create admin user
+    let Admin = new User();
+    Admin.email = adminEmail;
+    Admin.username = adminUsername;
+    Admin.setPassword(adminPassword);
+
+    Admin.save((err, user) => {
+        if (err) {
+            logger.error(`Admin already exists. Error: ${err}`);
+        } else {
+            logger.info(`Admin user creation successful. User ID: ${user._id}`);
+        }
+    });
 }
 
 module.exports = router;
