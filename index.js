@@ -24,6 +24,10 @@ var env = process.env.ENV;
 var mongouser = process.env.MONGO_INITDB_ROOT_USERNAME
 var mongopassword = process.env.MONGO_INITDB_ROOT_PASSWORD
 
+console.log(mongouser)
+console.log(mongopassword)
+console.log(env)
+
 var app = express();
 
 // For Cross Origin Request Sharing Authorization
