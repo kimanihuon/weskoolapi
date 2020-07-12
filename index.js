@@ -21,6 +21,8 @@ const logger = require("./modules/logger.js");
 // Implement environment variables
 var port = 5443;
 var env = process.env.ENV;
+var mongouser = process.env.MONGO_INITDB_ROOT_USERNAME
+var mongopassword = process.env.MONGO_INITDB_ROOT_PASSWORD
 
 var app = express();
 
@@ -57,7 +59,7 @@ app.use(bodyParser.json());
 
 // Define replica db parameters
 // var uri = 'mongodb://user:pw@host1.com:27017,host2.com:27017,host3.com:27017/testdb'
-var uri = 'mongodb://127.0.0.1:27017,127.0.0.1:27018,127.0.0.1:27019/weskool?replicaSet=rs0'
+var uri = `mongodb://${mongouser}:${mongopassword}@127.0.0.1:27017/digitalmatatus?authSource=admin`
 
 // Options
 var options = {
