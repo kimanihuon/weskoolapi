@@ -2,6 +2,7 @@ const User = require('../models/userOdm');
 const Chat = require('../models/chatOdm');
 const logger = require('../modules/logger');
 const userCache = require('../modules/userCache');
+const Track = require('../models/trackOdm');
 var id;
 
 function SocketOperations() { }
@@ -149,6 +150,46 @@ SocketOperations.prototype.updateChatStatus = function (data, client, verifiedUs
             // alert(data, socketio);
         }
     })
+
+}
+
+// Get summaries
+SocketOperations.prototype.retrieveSummaries = function (client, verifiedUser, socketio, details) {
+    // TODO: verify if request is from admin
+    var address = client.handshake.address;
+
+    User.estimatedDocumentCount({}, function (err, res) {
+        if (err) {
+            logger.error(`Failed to count users from socket: ${client.id} and I.P address: ${address}. Message: ${err.message}`);
+            client.emit('summaries', { success: false })
+        } else {
+            logger.success(`Successfully fetched total chats for socket: ${client.id} and I.P address: ${address}.`);
+            client.emit('summaries', { success: true, data: { users: res } });
+        }
+    });
+
+    Chat.estimatedDocumentCount({}, function (err, res) {
+        if (err) {
+            logger.error(`Failed to count chats from socket: ${client.id} and I.P address: ${address}. Message: ${err.message}`);
+            client.emit('summaries', { success: false })
+        } else {
+            logger.success(`Successfully fetched total chats for socket: ${client.id} and I.P address: ${address}.`);
+            client.emit('summaries', { success: true, data: { chats: res } });
+        }
+    });
+
+    Track.estimatedDocumentCount({}, function (err, res) {
+        if (err) {
+            logger.error(`Failed to count tracks from socket: ${client.id} and I.P address: ${address}. Message: ${err.message}`);
+            client.emit('summaries', { success: false })
+        } else {
+            logger.success(`Successfully fetched total tracks from socket: ${client.id} and I.P address: ${address}.`);
+            client.emit('summaries', { success: true, data: { tracks: res } });
+        }
+    });
+
+    // Users who are logged in
+    client.emit('summaries', { success: true, data: { online: Object.keys(userCache.getAllClients()).length } });
 
 }
 

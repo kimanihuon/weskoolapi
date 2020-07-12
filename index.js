@@ -180,6 +180,14 @@ io.on('connection', function (client) {
         }
     })
 
+    client.on('summaries', function (details) {
+        var verify = jwtOperations.verifySocketToken(client);
+        if (verify[0]) {
+            var verifiedUser = verify[1];
+            socketOperations.retrieveSummaries(client, verifiedUser, io, details)
+        }
+    })
+
 })
 
 // // To update, the field must first be defined in the schema
