@@ -19,7 +19,10 @@ var cors = require('cors');
 // var csrf = require('csurf');
 var app = express();
 var port = 6443;
-var uri = 'mongodb://127.0.0.1:27017,127.0.0.1:27018,127.0.0.1:27019/weskool?replicaSet=rs0'
+var env = process.env.ENV;
+var mongouser = process.env.MONGO_INITDB_ROOT_USERNAME
+var mongopassword = process.env.MONGO_INITDB_ROOT_PASSWORD
+var uri = `mongodb://${mongouser}:${mongopassword}@127.0.0.1:27017/weskool?authSource=admin`
 
 // var csrfProtection = csrf({ cookie: true });
 

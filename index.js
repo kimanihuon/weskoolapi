@@ -59,7 +59,7 @@ app.use(bodyParser.json());
 
 // Define replica db parameters
 // var uri = 'mongodb://user:pw@host1.com:27017,host2.com:27017,host3.com:27017/testdb'
-var uri = `mongodb://${mongouser}:${mongopassword}@127.0.0.1:27017/digitalmatatus?authSource=admin`
+var uri = `mongodb://${mongouser}:${mongopassword}@127.0.0.1:27017/weskool?authSource=admin`
 
 // Options
 var options = {
