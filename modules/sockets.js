@@ -84,7 +84,7 @@ SocketOperations.prototype.send = function (data, client, verifiedUser, socketio
             } else {
                 var message = res.messages[res.messages.length - 1];
                 logger.info(`Success: Successfully added message to: ${data._id} from socket: ${client.id} and I.P address: ${address}.`);
-                client.emit('sentResponse', { success: true, type: 'existing', data: message });
+                client.emit('sentResponse', { success: true, type: 'existing', intent: data.intent ? data.intent : 'newMessage', data: message, chatId: data._id });
                 alert(data, socketio);
             }
         })
@@ -123,7 +123,7 @@ SocketOperations.prototype.send = function (data, client, verifiedUser, socketio
             logger.info(`Success creating chat, socket: ${client.id} from I.P: ${address}, user addition results: ${resultArray}`)
 
             if (associateUser) {
-                client.emit('sentResponse', { success: true, type: 'new', data: chat })
+                client.emit('sentResponse', { success: true, type: 'new', intent: data.intent ? data.intent : 'newChat', data: chat })
                 id = chat._id;
                 alert(data, socketio)
             }
