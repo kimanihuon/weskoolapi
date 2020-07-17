@@ -174,7 +174,7 @@ io.on('connection', function (client) {
         console.log(userCache.getAllClients());
     });
 
-    client.on('markSeen', function(id){
+    client.on('markSeen', function (id) {
         var verify = jwtOperations.verifySocketToken(client);
         if (verify[0]) {
             var verifiedUser = verify[1];
@@ -187,6 +187,14 @@ io.on('connection', function (client) {
         if (verify[0]) {
             var verifiedUser = verify[1];
             socketOperations.retrieveSummaries(client, verifiedUser, io, details)
+        }
+    });
+
+    client.on('updateTrack', function (payload) {
+        var verify = jwtOperations.verifySocketToken(client);
+        if (verify[0]) {
+            var verifiedUser = verify[1];
+            socketOperations.updateTrack(client, verifiedUser, io, payload)
         }
     })
 

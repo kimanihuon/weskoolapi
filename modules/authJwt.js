@@ -79,13 +79,16 @@ jwtOperations.prototype.verifySocketToken = function (client) {
 
     // Client address
     var address = client.handshake.address;
+    var success;
+    var verifiedUser;
+    var myCookies = client.handshake.headers.cookie;
+
+    if (typeof myCookies !== 'undefined') {} else {
+        return [success = false, verifiedUser = null];
+    }
 
     // Extract cookie information
     var cookies = cookie.parse(client.handshake.headers.cookie);
-    // console.log(cookies);
-
-    var success;
-    var verifiedUser;
 
     jwt.verify(cookies.jwtToken, secretkey, (err, auth) => {
         if (err) {

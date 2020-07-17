@@ -8,6 +8,14 @@ const track = new Schema({
     name: {
         type: String
     },
+    private: {
+        type: Boolean,
+        default: true
+    },
+    owner: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'users'
+    },
     active: {
         type: Boolean
     },

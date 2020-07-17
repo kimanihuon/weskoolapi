@@ -4,6 +4,10 @@ Logger.prototype.info = function (logText) {
     console.log(new Date() + 'info:::::' + logText);
 };
 
+Logger.prototype.failed = function (logText) {
+    console.log(new Date() + 'failed:::::' + logText);
+};
+
 Logger.prototype.debug = function (logText) {
     console.log(new Date() + 'debug:::::' + logText);
 };

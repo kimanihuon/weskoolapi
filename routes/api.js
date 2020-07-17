@@ -78,7 +78,7 @@ router.post('/login/verify', jwtOperations.verifyToken, function (req, res, next
             logger.info(`Error getting user details from I.P. ${req.connection.remoteAddress}, message: ${err} or not registered`);
             res.send({ authorized: false, message: "Unable to get user. Probably not registered" })
         } else {
-            getReferences( trimUser(user), req, res, next, 'verify')
+            getReferences(trimUser(user), req, res, next, 'verify')
         }
     }).select('-password')
 });
@@ -109,6 +109,22 @@ router.post('/update', jwtOperations.verifyToken, function (req, res, next) {
         } else {
             logger.info(`Successfully updated details from I.P: ${req.connection.remoteAddress} and user I.D ${req.verifiedUser._id} `)
             res.send({ success: true, message: 'User updated successfully' })
+        }
+    })
+})
+
+// Fetch single track
+router.get('/track/single', function (req, res, next) {
+    Track.findById({ "_id": req.query.id }, { private: false}, (err, result) => {
+        if (err) {
+            logger.error(`No track with ID ${req.query.id} found. Requested from: ${req.connection.remoteAddress}  Error: ${err}`)
+            res.send({ success: false,  error: 'Server side error' });
+        } else if (!result) {
+            logger.failed(`No track found with ID: ${req.query.id}. Probably private track. Requested from: ${req.connection.remoteAddress} `);
+            res.send({ success: false, error: "Track not available or has been made private" });
+        } else {
+            logger.success(`Found track with ID: ${req.query.id}. Requested from: ${req.connection.remoteAddress} `);
+            res.send({ success: true, result: { track: result } });
         }
     })
 })
@@ -191,7 +207,7 @@ function getReferences(user, req, res, next, type) {
         Chat.find({ "_id": { "$in": result["chats"] } }).then((chats) => {
             // Assign results to chat
             user.chats = chats;
-            
+
             // GET ALL FRIENDS
             User.find({ "_id": { "$in": result["friends"] } }).then((friends) => {
                 // Assign result to friends

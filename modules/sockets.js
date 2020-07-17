@@ -193,5 +193,23 @@ SocketOperations.prototype.retrieveSummaries = function (client, verifiedUser, s
 
 }
 
+SocketOperations.prototype.updateTrack = function (client, verifiedUser, socketio, details) {
+    var address = client.handshake.address;
+
+    Track.findOneAndUpdate({ _id: details.id }, details.data, function (err, res) {
+        if (err) {
+            logger.error(`Failed to update track: ${details.id} from socket: ${client.id} and I.P address: ${address}. Message: ${err.message}`);
+            client.emit('trackUpdated', { success: false })
+        } else if (!res) {
+            logger.failed(`Failed to update track: ${details.id}, not found. Request from: ${client.id} and I.P address: ${address}. Message: ${err.message}`);
+            client.emit('trackUpdated', { success: false })
+        } else {
+            console.log(res)
+            logger.success(`Successfully updated track: ${details.id} from socket: ${client.id} and I.P address: ${address}.`);
+            client.emit('trackUpdated', { success: true, result: {track: res} });
+        }
+    })
+}
+
 module.exports = new SocketOperations
 
